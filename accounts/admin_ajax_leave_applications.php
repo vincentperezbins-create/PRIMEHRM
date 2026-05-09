@@ -1,0 +1,56 @@
+<?php
+require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/core/auth.php';
+require_once __DIR__ . '/core/leave_helpers.php';
+
+require_login();
+require_validator($pdo, 'leave');
+
+header('Content-Type: application/json');
+
+try {
+
+    $stmt = $pdo->query("
+        SELECT 
+            la.application_id,
+            la.user_id,
+            la.leave_type_id,
+            la.date_from,
+            la.date_to,
+            la.days,
+            la.reason,
+            la.status,
+            la.created_at,
+            " . (leave_has_column($pdo, 'leave_applications', 'pay_status') ? "COALESCE(la.pay_status, 'with_pay')" : "'with_pay'") . " AS pay_status,
+
+            u.employeeID AS employee_id,
+            CONCAT(u.first_name,' ',u.last_name) AS name,
+            lt.leave_name,
+
+            CONCAT(
+                DATE_FORMAT(la.date_from, '%b %d, %Y'),
+                ' - ',
+                DATE_FORMAT(la.date_to, '%b %d, %Y')
+            ) AS date_range
+
+        FROM leave_applications la
+        JOIN sdopang1_user u ON la.user_id = u.user_id
+        JOIN leave_types lt ON la.leave_type_id = lt.leave_type_id
+        ORDER BY la.created_at DESC
+    ");
+
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        "data" => $data
+    ]);
+
+} catch (Exception $e) {
+
+    echo json_encode([
+        "data" => [],
+        "error" => $e->getMessage()
+    ]);
+}
+
+

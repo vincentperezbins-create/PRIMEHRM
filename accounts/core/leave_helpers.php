@@ -127,6 +127,264 @@ function leave_validate_application_rules(PDO $pdo, int $userId, array $type, fl
     }
 }
 
+function leave_cto_parse_schedule(array $entries, bool $allowHalfDay = true): array {
+    $schedule = [];
+
+    foreach ($entries as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+
+        $dateFrom = trim((string) ($entry['date_from'] ?? ''));
+        $dateTo = trim((string) ($entry['date_to'] ?? $dateFrom));
+        $period = strtoupper(trim((string) ($entry['period'] ?? 'WHOLE')));
+
+        if ($dateFrom === '') {
+            continue;
+        }
+
+        if ($dateTo === '') {
+            $dateTo = $dateFrom;
+        }
+
+        if (!in_array($period, ['WHOLE', 'AM', 'PM'], true)) {
+            throw new RuntimeException('Invalid leave period selected');
+        }
+
+        if (!$allowHalfDay && in_array($period, ['AM', 'PM'], true)) {
+            throw new RuntimeException('AM or PM selection is only allowed for CTO leave');
+        }
+
+        $start = DateTime::createFromFormat('Y-m-d', $dateFrom);
+        $end = DateTime::createFromFormat('Y-m-d', $dateTo);
+
+        if (!$start || !$end || $start->format('Y-m-d') !== $dateFrom || $end->format('Y-m-d') !== $dateTo || $end < $start) {
+            throw new RuntimeException('Invalid leave date selection');
+        }
+
+        if (in_array($period, ['AM', 'PM'], true) && $dateFrom !== $dateTo) {
+            throw new RuntimeException('AM or PM CTO must be for one date only');
+        }
+
+        $schedule[] = [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'period' => $period,
+        ];
+    }
+
+    if (!$schedule) {
+        throw new RuntimeException('Please add at least one CTO date');
+    }
+
+    return $schedule;
+}
+
+function leave_cto_schedule_summary(array $schedule): array {
+    $days = 0.0;
+    $dates = [];
+
+    foreach ($schedule as $entry) {
+        if ($entry['period'] === 'WHOLE') {
+            $days += leave_work_days($entry['date_from'], $entry['date_to']);
+        } else {
+            $date = DateTime::createFromFormat('Y-m-d', $entry['date_from']);
+            if (!$date || (int) $date->format('N') > 5) {
+                throw new RuntimeException('Half-day CTO must be on a working day');
+            }
+            $days += 0.5;
+        }
+
+        $dates[] = $entry['date_from'];
+        $dates[] = $entry['date_to'];
+    }
+
+    sort($dates);
+
+    return [
+        'date_from' => $dates[0],
+        'date_to' => $dates[count($dates) - 1],
+        'days' => $days,
+    ];
+}
+
+function leave_cto_schedule_label(array $schedule): string {
+    $parts = [];
+
+    foreach ($schedule as $entry) {
+        $from = date('M d, Y', strtotime($entry['date_from']));
+        $to = date('M d, Y', strtotime($entry['date_to']));
+        $label = $entry['date_from'] === $entry['date_to'] ? $from : $from . ' - ' . $to;
+
+        if ($entry['period'] !== 'WHOLE') {
+            $label .= ' ' . $entry['period'] . ' only';
+        }
+
+        $parts[] = $label;
+    }
+
+    return implode('; ', $parts);
+}
+
+function leave_cto_available_batches(PDO $pdo, int $userId, int $leaveTypeId, ?string $validUntil = null): array {
+    if (!leave_has_column($pdo, 'leave_transactions', 'expires_at')) {
+        return [];
+    }
+
+    $validUntil = $validUntil ?: date('Y-m-d');
+    $validUntilDate = DateTime::createFromFormat('Y-m-d', $validUntil) ?: new DateTime();
+
+    $stmt = $pdo->prepare("
+        SELECT transaction_id, transaction_type, days, earned_at, expires_at, created_at, remarks
+        FROM leave_transactions
+        WHERE user_id = ? AND leave_type_id = ?
+        ORDER BY COALESCE(earned_at, created_at), created_at, transaction_id
+    ");
+    $stmt->execute([$userId, $leaveTypeId]);
+
+    $batches = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $days = (float) ($row['days'] ?? 0);
+
+        if (in_array($row['transaction_type'], ['earn', 'adjust'], true) && $days > 0) {
+            $expiresAt = $row['expires_at'] ?: date('Y-m-d H:i:s', strtotime(($row['earned_at'] ?: $row['created_at']) . ' +1 year'));
+            $expiresDate = DateTime::createFromFormat('Y-m-d H:i:s', $expiresAt)
+                ?: DateTime::createFromFormat('Y-m-d', substr($expiresAt, 0, 10));
+
+            $batches[] = [
+                'transaction_id' => (int) $row['transaction_id'],
+                'earned_at' => $row['earned_at'] ?: $row['created_at'],
+                'expires_at' => $expiresAt,
+                'expires_date' => substr($expiresAt, 0, 10),
+                'days' => $days,
+                'remaining' => $days,
+                'remarks' => $row['remarks'] ?? '',
+                'is_expired' => $expiresDate ? $expiresDate < $validUntilDate : false,
+            ];
+            continue;
+        }
+
+        if ($days <= 0) {
+            continue;
+        }
+
+        $remainingUse = $days;
+        $targetBatchIds = [];
+        if (preg_match_all('/CTO earned #(\d+)/', (string) ($row['remarks'] ?? ''), $matches)) {
+            $targetBatchIds = array_map('intval', $matches[1]);
+        }
+
+        if ($targetBatchIds) {
+            foreach ($batches as &$batch) {
+                if ($remainingUse <= 0) {
+                    break;
+                }
+
+                if (!in_array((int) $batch['transaction_id'], $targetBatchIds, true) || $batch['remaining'] <= 0) {
+                    continue;
+                }
+
+                $deduct = min($batch['remaining'], $remainingUse);
+                $batch['remaining'] -= $deduct;
+                $remainingUse -= $deduct;
+            }
+            unset($batch);
+        }
+
+        foreach ($batches as &$batch) {
+            if ($remainingUse <= 0) {
+                break;
+            }
+
+            if ($batch['remaining'] <= 0) {
+                continue;
+            }
+
+            $deduct = min($batch['remaining'], $remainingUse);
+            $batch['remaining'] -= $deduct;
+            $remainingUse -= $deduct;
+        }
+        unset($batch);
+    }
+
+    return array_values(array_filter($batches, function (array $batch): bool {
+        return $batch['remaining'] > 0 && !$batch['is_expired'];
+    }));
+}
+
+function leave_normalize_cto_selection(array $selectedIds): array {
+    $ids = array_map('intval', $selectedIds);
+    $ids = array_values(array_unique(array_filter($ids, fn($id) => $id > 0)));
+    sort($ids);
+
+    return $ids;
+}
+
+function leave_validate_cto_selection(PDO $pdo, int $userId, int $leaveTypeId, float $days, array $selectedIds, string $dateTo): array {
+    $selectedIds = leave_normalize_cto_selection($selectedIds);
+
+    if (!$selectedIds) {
+        throw new RuntimeException('Please select the CTO credits to use for this application');
+    }
+
+    $batches = leave_cto_available_batches($pdo, $userId, $leaveTypeId, $dateTo);
+    $selected = [];
+    $total = 0.0;
+
+    foreach ($batches as $batch) {
+        if (in_array((int) $batch['transaction_id'], $selectedIds, true)) {
+            $selected[] = $batch;
+            $total += (float) $batch['remaining'];
+        }
+    }
+
+    if (count($selected) !== count($selectedIds)) {
+        throw new RuntimeException('One or more selected CTO credits are expired or no longer available');
+    }
+
+    if ($total + 0.0001 < $days) {
+        throw new RuntimeException('Selected CTO credits are not enough for the requested days');
+    }
+
+    return $selected;
+}
+
+function leave_deduct_selected_cto(PDO $pdo, array $application, array $selectedIds, ?string $remarks = null): void {
+    $userId = (int) $application['user_id'];
+    $leaveTypeId = (int) $application['leave_type_id'];
+    $days = (float) $application['days'];
+    $applicationId = (int) $application['application_id'];
+    $selected = leave_validate_cto_selection($pdo, $userId, $leaveTypeId, $days, $selectedIds, (string) $application['date_to']);
+    $remaining = $days;
+
+    foreach ($selected as $batch) {
+        if ($remaining <= 0) {
+            break;
+        }
+
+        $deduct = min((float) $batch['remaining'], $remaining);
+        if ($deduct <= 0) {
+            continue;
+        }
+
+        leave_change_balance(
+            $pdo,
+            $userId,
+            $leaveTypeId,
+            -$deduct,
+            'use',
+            'application',
+            trim(($remarks ?: 'Approved CTO leave') . ' | CTO earned #' . $batch['transaction_id'] . ' expires ' . $batch['expires_date']),
+            $applicationId
+        );
+        $remaining -= $deduct;
+    }
+
+    if ($remaining > 0.0001) {
+        throw new RuntimeException('Selected CTO credits were not enough to complete the deduction');
+    }
+}
+
 function leave_get_balance_row(PDO $pdo, int $userId, int $leaveTypeId, bool $forUpdate = false): ?array {
     $sql = "
         SELECT *
@@ -337,6 +595,17 @@ function leave_deduct_for_application(PDO $pdo, array $application, ?string $rem
     $code = $type['leave_code'] ?? '';
 
     if (!leave_deducts_balance($type)) {
+        return;
+    }
+
+    if ($code === 'CTO') {
+        $selectedIds = [];
+        if (isset($application['cto_transaction_ids']) && trim((string) $application['cto_transaction_ids']) !== '') {
+            $decoded = json_decode((string) $application['cto_transaction_ids'], true);
+            $selectedIds = is_array($decoded) ? $decoded : [];
+        }
+
+        leave_deduct_selected_cto($pdo, $application, $selectedIds, $remarks);
         return;
     }
 

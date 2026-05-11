@@ -94,6 +94,7 @@
             <li><a href="admin_leave_balances.php">Leave Balances</a></li>
             <li><a href="admin_leave_ledger.php">Leave Ledger</a></li>
             <li><a href="admin_leave_transactions.php">Transactions</a></li>
+            <li><a href="admin_leave_types.php">Leave Types</a></li>
         </ul>
     </li>
 

@@ -20,20 +20,36 @@ $leaveTypeId = filter_input(INPUT_POST, 'leave_type_id', FILTER_VALIDATE_INT);
 $dateFrom = $_POST['date_from'] ?? '';
 $dateTo = $_POST['date_to'] ?? '';
 $reason = trim($_POST['reason'] ?? '');
+$ctoTransactionIds = isset($_POST['cto_transaction_ids']) && is_array($_POST['cto_transaction_ids'])
+    ? leave_normalize_cto_selection($_POST['cto_transaction_ids'])
+    : [];
+$leaveSchedule = [];
 
 if (!$leaveTypeId || $reason === '') {
     leave_json(['status' => 'error', 'message' => 'Leave type and reason are required'], 422);
 }
 
 try {
-    $days = leave_work_days($dateFrom, $dateTo);
+    $type = leave_get_type($pdo, $leaveTypeId);
+    $personnelType = leave_get_user_personnel_type($pdo, $userId);
+
+    if (!empty($_POST['cto_schedule']) && is_array($_POST['cto_schedule'])) {
+        if (!leave_has_column($pdo, 'leave_applications', 'leave_schedule')) {
+            throw new RuntimeException('Please run database/leave_schedule_migration.sql before filing leave by schedule');
+        }
+
+        $leaveSchedule = leave_cto_parse_schedule($_POST['cto_schedule'], ($type['leave_code'] ?? '') === 'CTO');
+        $summary = leave_cto_schedule_summary($leaveSchedule);
+        $dateFrom = $summary['date_from'];
+        $dateTo = $summary['date_to'];
+        $days = (float) $summary['days'];
+    } else {
+        $days = leave_work_days($dateFrom, $dateTo);
+    }
 
     if ($days <= 0) {
         throw new RuntimeException('Leave date range has no working days');
     }
-
-    $type = leave_get_type($pdo, $leaveTypeId);
-    $personnelType = leave_get_user_personnel_type($pdo, $userId);
 
     if (!empty($type['personnel_type'])) {
         $allowedPersonnel = strtolower(trim((string) $type['personnel_type']));
@@ -43,7 +59,14 @@ try {
     }
 
     if (leave_deducts_balance($type)) {
-        if (($type['leave_code'] ?? '') === 'SL') {
+        if (($type['leave_code'] ?? '') === 'CTO') {
+            if (!leave_has_column($pdo, 'leave_applications', 'cto_transaction_ids')) {
+                throw new RuntimeException('Please run database/leave_cto_selection_migration.sql before filing CTO leave');
+            }
+
+            leave_validate_cto_selection($pdo, $userId, $leaveTypeId, $days, $ctoTransactionIds, $dateTo);
+            $available = array_sum(array_map('floatval', array_column(leave_cto_available_batches($pdo, $userId, $leaveTypeId, $dateTo), 'remaining')));
+        } elseif (($type['leave_code'] ?? '') === 'SL') {
             $vl = leave_get_type_by_code($pdo, 'VL');
             $available = leave_get_balance($pdo, $userId, $leaveTypeId) + ($vl ? leave_get_balance($pdo, $userId, (int) $vl['leave_type_id']) : 0);
         } else {
@@ -68,6 +91,9 @@ try {
         'status' => 'pending',
         'created_at' => date('Y-m-d H:i:s'),
         'created_by' => $userId,
+        'cto_transaction_ids' => ($type['leave_code'] ?? '') === 'CTO' ? json_encode($ctoTransactionIds) : null,
+        'cto_schedule' => ($type['leave_code'] ?? '') === 'CTO' ? json_encode($leaveSchedule) : null,
+        'leave_schedule' => $leaveSchedule ? json_encode($leaveSchedule) : null,
     ];
     $data = array_intersect_key($data, array_flip($available));
 

@@ -10,6 +10,7 @@ require_once __DIR__ . '/partials/session.php';
 $officeId = $currentUser['office_id'] ?? null;
 $officeRole = $currentUser['office_role'] ?? 'Staff';
 $isAssignedUnitHead = false;
+$isLinkedSchoolHead = false;
 
 $headOfficeStmt = $pdo->prepare("
     SELECT office_id
@@ -39,6 +40,14 @@ if ($officeId) {
     $officeStmt->execute([$officeId]);
     $office = $officeStmt->fetch(PDO::FETCH_ASSOC);
     $isAssignedUnitHead = (int) ($office['unit_head'] ?? 0) === (int) $_SESSION['user_id'];
+    $isLinkedSchoolHead = ($office['office_category'] ?? '') === 'School'
+        && (string) ($office['school_id'] ?? '') !== ''
+        && (string) ($office['school_id'] ?? '') === (string) ($currentUser['school_id'] ?? '')
+        && (
+            (string) ($currentUser['office_role'] ?? '') === 'Head'
+            || (int) ($_SESSION['role_id'] ?? 0) === 3
+            || (int) ($office['office_head'] ?? 0) === (int) $_SESSION['user_id']
+        );
 
     $stmt = $pdo->prepare("
         SELECT *
@@ -50,7 +59,7 @@ if ($officeId) {
     $opcrfs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$canFile = $isAssignedUnitHead;
+$canFile = $isAssignedUnitHead || $isLinkedSchoolHead;
 ?>
 <!DOCTYPE html>
 <html>
@@ -87,7 +96,7 @@ $canFile = $isAssignedUnitHead;
               </div>
               <div class="col-md-4 mb-2">
                 <p class="text-700 mb-1">Office Role</p>
-                <h6><?= htmlspecialchars($isAssignedUnitHead ? 'Unit Head' : $officeRole) ?></h6>
+                <h6><?= htmlspecialchars($isAssignedUnitHead ? 'Unit Head' : ($isLinkedSchoolHead ? 'School Head' : $officeRole)) ?></h6>
               </div>
               <div class="col-md-4 mb-2">
                 <p class="text-700 mb-1">Linked School</p>

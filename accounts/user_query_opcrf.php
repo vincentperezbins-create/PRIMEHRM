@@ -11,6 +11,7 @@ $currentUser = $userModel->getUserById($_SESSION['user_id']);
 $officeId = $currentUser['office_id'] ?? null;
 $officeRole = $currentUser['office_role'] ?? 'Staff';
 $isAssignedUnitHead = false;
+$isLinkedSchoolHead = false;
 
 $headOfficeStmt = $pdo->prepare("
     SELECT office_id
@@ -28,13 +29,30 @@ if ($headOfficeId) {
 }
 
 if ($officeId) {
-    $unitHeadStmt = $pdo->prepare("SELECT unit_head FROM sdopang1_offices WHERE office_id = ? LIMIT 1");
-    $unitHeadStmt->execute([$officeId]);
-    $isAssignedUnitHead = (int) $unitHeadStmt->fetchColumn() === (int) $_SESSION['user_id'];
+    $officeStmt = $pdo->prepare("
+        SELECT *
+        FROM sdopang1_offices
+        WHERE office_id = ?
+        LIMIT 1
+    ");
+    $officeStmt->execute([$officeId]);
+    $office = $officeStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($office) {
+        $isAssignedUnitHead = (int) ($office['unit_head'] ?? 0) === (int) $_SESSION['user_id'];
+        $isLinkedSchoolHead = ($office['office_category'] ?? '') === 'School'
+            && (string) ($office['school_id'] ?? '') !== ''
+            && (string) ($office['school_id'] ?? '') === (string) ($currentUser['school_id'] ?? '')
+            && (
+                (string) ($currentUser['office_role'] ?? '') === 'Head'
+                || (int) ($_SESSION['role_id'] ?? 0) === 3
+                || (int) ($office['office_head'] ?? 0) === (int) $_SESSION['user_id']
+            );
+    }
 }
 
-if (!$officeId || !$isAssignedUnitHead) {
-    opcrf_json(['status' => 'error', 'message' => 'Only the assigned unit head can file this office/unit OPCRF'], 403);
+if (!$officeId || (!$isAssignedUnitHead && !$isLinkedSchoolHead)) {
+    opcrf_json(['status' => 'error', 'message' => 'Only the assigned unit head or linked school head can file this office/unit OPCRF'], 403);
 }
 
 try {

@@ -21,10 +21,13 @@ try {
             la.reason,
             la.status,
             la.created_at,
+            " . (leave_has_column($pdo, 'leave_applications', 'cto_schedule') ? "la.cto_schedule" : "NULL") . " AS cto_schedule,
+            " . (leave_has_column($pdo, 'leave_applications', 'leave_schedule') ? "la.leave_schedule" : "NULL") . " AS leave_schedule,
             " . (leave_has_column($pdo, 'leave_applications', 'pay_status') ? "COALESCE(la.pay_status, 'with_pay')" : "'with_pay'") . " AS pay_status,
 
             u.employeeID AS employee_id,
             CONCAT(u.first_name,' ',u.last_name) AS name,
+            lt.leave_code,
             lt.leave_name,
 
             CONCAT(
@@ -40,6 +43,17 @@ try {
     ");
 
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($data as &$row) {
+        $scheduleJson = $row['leave_schedule'] ?? ($row['cto_schedule'] ?? null);
+        if (!empty($scheduleJson)) {
+            $schedule = json_decode((string) $scheduleJson, true);
+            if (is_array($schedule)) {
+                $row['date_range'] = leave_cto_schedule_label($schedule);
+            }
+        }
+    }
+    unset($row);
 
     echo json_encode([
         "data" => $data

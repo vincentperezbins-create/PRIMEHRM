@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
+require_once __DIR__ . '/core/leave_helpers.php';
 
 $userModel = new User($pdo);
 require_login();
@@ -66,10 +67,20 @@ $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </thead>
                 <tbody>
                   <?php foreach ($applications as $application): ?>
+                    <?php
+                    $dateRange = date('M d, Y', strtotime($application['date_from'])) . ' - ' . date('M d, Y', strtotime($application['date_to']));
+                    $scheduleJson = $application['leave_schedule'] ?? ($application['cto_schedule'] ?? null);
+                    if (!empty($scheduleJson)) {
+                        $schedule = json_decode((string) $scheduleJson, true);
+                        if (is_array($schedule)) {
+                            $dateRange = leave_cto_schedule_label($schedule);
+                        }
+                    }
+                    ?>
                     <tr>
                       <td><?= htmlspecialchars($application['employeeID'] ?? '-') ?></td>
                       <td><?= htmlspecialchars(($application['leave_code'] ?? '') . ' - ' . $application['leave_name']) ?></td>
-                      <td><?= htmlspecialchars(date('M d, Y', strtotime($application['date_from'])) . ' - ' . date('M d, Y', strtotime($application['date_to']))) ?></td>
+                      <td><?= htmlspecialchars($dateRange) ?></td>
                       <td class="text-end"><?= htmlspecialchars(number_format((float) $application['days'], 3)) ?></td>
                       <td><?= htmlspecialchars(ucfirst((string) $application['status'])) ?></td>
                       <td><?= htmlspecialchars($application['reason'] ?? '-') ?></td>

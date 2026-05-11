@@ -151,6 +151,11 @@ if (isset($pdo, $currentUser, $_SESSION['role_id'])) {
 }
 
 $notificationTotal = array_sum(array_column($notificationItems, 'count'));
+$navbarFullName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['middle_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+$navbarFullName = $navbarFullName !== '' ? $navbarFullName : 'User';
+$navbarRoleName = trim((string) ($role['role_name'] ?? $currentUser['role_name'] ?? 'User'));
+$navbarInitials = strtoupper(substr((string) ($currentUser['first_name'] ?? 'U'), 0, 1) . substr((string) ($currentUser['last_name'] ?? ''), 0, 1));
+$navbarImage = trim((string) ($currentUser['user_image'] ?? ''));
 ?>
     <div class="header">
       <div class="header-left">
@@ -278,9 +283,16 @@ $notificationTotal = array_sum(array_column($notificationItems, 'count'));
               data-toggle="dropdown"
             >
               <span class="user-icon">
-                <img src="../assets_pang1/logo.png" alt="" />
+                <?php if ($navbarImage !== ''): ?>
+                  <img src="<?= htmlspecialchars($navbarImage, ENT_QUOTES, 'UTF-8') ?>" alt="" />
+                <?php else: ?>
+                  <span class="navbar-user-initials"><?= htmlspecialchars($navbarInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
               </span>
-              <span class="user-name"><?= htmlspecialchars(trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['middle_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''))) ?></span>
+              <span class="navbar-user-meta">
+                <span class="user-name"><?= htmlspecialchars($navbarFullName, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="user-role"><?= htmlspecialchars($navbarRoleName, ENT_QUOTES, 'UTF-8') ?></span>
+              </span>
             </a>
             <div
               class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list"

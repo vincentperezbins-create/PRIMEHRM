@@ -51,7 +51,7 @@
       href="src/plugins/datatables/css/responsive.bootstrap4.min.css"
     />
     <link rel="stylesheet" type="text/css" href="vendors/styles/style.css" />
-    <link rel="stylesheet" type="text/css" href="../assets/css/custom-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../assets/css/custom-ui.css?v=<?= filemtime(__DIR__ . '/../../assets/css/custom-ui.css') ?>" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../assets/js/ui-helpers.js"></script>
 

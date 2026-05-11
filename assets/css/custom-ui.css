@@ -997,6 +997,16 @@ label.required::after {
   border-color: #4c1d95;
 }
 
+.school-export-actions .dt-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.school-export-btn {
+  margin-right: 0 !important;
+}
+
 .profile-page-intro {
   display: flex;
   align-items: flex-start;

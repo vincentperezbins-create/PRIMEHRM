@@ -81,11 +81,194 @@ $totalSchool = $pdo->query("SELECT COUNT(*) FROM sdopang1schoollist")->fetchColu
 <script src="src/plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
 <script src="src/plugins/datatables/js/dataTables.responsive.min.js"></script>
 <script src="src/plugins/datatables/js/responsive.bootstrap4.min.js"></script>
+<script src="src/plugins/datatables/js/dataTables.buttons.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.print.min.js"></script>
+<script src="src/plugins/datatables/js/jszip.min.js"></script>
+<script src="src/plugins/datatables/js/pdfmake.min.js"></script>
+<script src="src/plugins/datatables/js/vfs_fonts.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 $(document).ready(function () {
+    const exportColumns = [
+        { key: 'schoolID', label: 'School ID' },
+        { key: 'schoolname', label: 'School Name' },
+        { key: 'district', label: 'District' },
+        { key: 'address', label: 'Address' },
+        { key: 'principal_name', label: 'Principal' }
+    ];
+
+    function htmlEscape(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function fetchAllSchoolsForExport(dt) {
+        return $.ajax({
+            url: 'admin_ajax_school_list.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                draw: 1,
+                start: 0,
+                length: 1000000,
+                search: { value: dt.search() }
+            }
+        }).then(function(response) {
+            return response && response.data ? response.data : [];
+        });
+    }
+
+    function notifyExportError(message) {
+        if (window.PrimeUI && PrimeUI.error) {
+            PrimeUI.error(message);
+            return;
+        }
+
+        Swal.fire({ icon: 'error', title: 'Export failed', text: message });
+    }
+
+    function downloadExcel(rows) {
+        let tableHtml = '<table><thead><tr>';
+        exportColumns.forEach(function(column) {
+            tableHtml += '<th>' + htmlEscape(column.label) + '</th>';
+        });
+        tableHtml += '</tr></thead><tbody>';
+        rows.forEach(function(row) {
+            tableHtml += '<tr>';
+            exportColumns.forEach(function(column) {
+                tableHtml += '<td>' + htmlEscape(row[column.key]) + '</td>';
+            });
+            tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+
+        const blob = new Blob(['\ufeff' + tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'PRIMEHR_School_List.xls';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadPdf(rows) {
+        if (!window.pdfMake) {
+            notifyExportError('PDF export tools are not loaded. Please refresh the page.');
+            return;
+        }
+
+        const body = [
+            exportColumns.map(function(column) {
+                return { text: column.label, style: 'tableHeader' };
+            })
+        ];
+
+        rows.forEach(function(row) {
+            body.push(exportColumns.map(function(column) {
+                return String(row[column.key] ?? '');
+            }));
+        });
+
+        pdfMake.createPdf({
+            pageOrientation: 'landscape',
+            pageSize: 'A4',
+            content: [
+                { text: 'PRIMEHR School List', style: 'title' },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['auto', '*', '*', '*', '*'],
+                        body: body
+                    },
+                    layout: 'lightHorizontalLines'
+                }
+            ],
+            styles: {
+                title: { fontSize: 16, bold: true, margin: [0, 0, 0, 12] },
+                tableHeader: { bold: true, fillColor: '#eff6ff', color: '#0f172a' }
+            },
+            defaultStyle: { fontSize: 8 }
+        }).download('PRIMEHR_School_List.pdf');
+    }
+
+    function printRows(rows) {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            notifyExportError('Please allow pop-ups to print the school list.');
+            return;
+        }
+
+        let rowsHtml = '';
+        rows.forEach(function(row) {
+            rowsHtml += '<tr>';
+            exportColumns.forEach(function(column) {
+                rowsHtml += '<td>' + htmlEscape(row[column.key]) + '</td>';
+            });
+            rowsHtml += '</tr>';
+        });
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+              <head>
+                <title>PRIMEHR School List</title>
+                <style>
+                  body { font-family: Arial, sans-serif; color: #0f172a; }
+                  h2 { margin-bottom: 12px; }
+                  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                  th, td { border: 1px solid #dbe5f1; padding: 7px; text-align: left; }
+                  th { background: #eff6ff; }
+                </style>
+              </head>
+              <body>
+                <h2>PRIMEHR School List</h2>
+                <table>
+                  <thead>
+                    <tr>${exportColumns.map(column => '<th>' + htmlEscape(column.label) + '</th>').join('')}</tr>
+                  </thead>
+                  <tbody>${rowsHtml}</tbody>
+                </table>
+              </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    }
+
+    function exportAllRows(e, dt, button, config) {
+        const buttonNode = $(button);
+        const originalText = buttonNode.html();
+        buttonNode.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Preparing...');
+
+        fetchAllSchoolsForExport(dt)
+            .then(function(rows) {
+                if (!rows.length) {
+                    notifyExportError('No school records found for export.');
+                    return;
+                }
+
+                if (config.exportType === 'excel') downloadExcel(rows);
+                if (config.exportType === 'pdf') downloadPdf(rows);
+                if (config.exportType === 'print') printRows(rows);
+            })
+            .catch(function() {
+                notifyExportError('Unable to export the school list. Please try again.');
+            })
+            .always(function() {
+                buttonNode.prop('disabled', false).html(originalText);
+            });
+    }
 
     // ✅ DATATABLE
     const table = $('#schoolTable').DataTable({
@@ -96,6 +279,39 @@ $(document).ready(function () {
             type: "POST"
         },
         pageLength: 10,
+        dom:
+            "<'row align-items-center mb-2'<'col-md-6'l><'col-md-6'f>>" +
+            "<'row mb-3'<'col-12 school-export-actions'B>>" +
+            "rt" +
+            "<'row align-items-center mt-3'<'col-md-5'i><'col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Export Excel',
+                title: 'PRIMEHR School List',
+                className: 'btn btn-success school-export-btn',
+                exportType: 'excel',
+                action: exportAllRows
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="bi bi-file-earmark-pdf"></i> Export PDF',
+                title: 'PRIMEHR School List',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                className: 'btn btn-danger school-export-btn',
+                exportType: 'pdf',
+                action: exportAllRows
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> Print',
+                title: 'PRIMEHR School List',
+                className: 'btn btn-secondary school-export-btn',
+                exportType: 'print',
+                action: exportAllRows
+            }
+        ],
         columns: [
             { data: "schoolID" },
             { data: "schoolname" },

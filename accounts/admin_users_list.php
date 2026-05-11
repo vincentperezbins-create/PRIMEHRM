@@ -21,6 +21,21 @@ $roles = $pdo->query("SELECT role_id, role_name FROM sdopang1_roles ORDER BY rol
 <!DOCTYPE html>
 <html>
  <?php require_once __DIR__ . '/partials/head.php'; ?>
+  <style>
+    .user-export-actions .dt-buttons,
+    div.dt-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .user-export-btn {
+      border-radius: 999px !important;
+      padding: 8px 14px !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+    }
+  </style>
   <body>
    <?php require_once __DIR__ . '/partials/preloader.php'; ?>
 
@@ -173,6 +188,13 @@ $roles = $pdo->query("SELECT role_id, role_name FROM sdopang1_roles ORDER BY rol
     <script src="src/plugins/apexcharts/apexcharts.min.js"></script>
     <script src="src/plugins/datatables/js/jquery.dataTables.min.js"></script>
     <script src="src/plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
+    <script src="src/plugins/datatables/js/dataTables.buttons.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
+    <script src="src/plugins/datatables/js/jszip.min.js"></script>
+    <script src="src/plugins/datatables/js/pdfmake.min.js"></script>
+    <script src="src/plugins/datatables/js/vfs_fonts.js"></script>
+    <script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.print.min.js"></script>
     <script src="src/plugins/datatables/js/dataTables.responsive.min.js"></script>
     <script src="src/plugins/datatables/js/responsive.bootstrap4.min.js"></script>
 
@@ -181,6 +203,181 @@ $roles = $pdo->query("SELECT role_id, role_name FROM sdopang1_roles ORDER BY rol
 
 <script>
 $(document).ready(function () {
+
+    const exportColumns = [
+        { key: 'name', label: 'Name' },
+        { key: 'school_id', label: 'School ID' },
+        { key: 'schoolname', label: 'School' },
+        { key: 'position_title', label: 'Position' },
+        { key: 'role_name', label: 'Role' },
+        { key: 'division_unit', label: 'Form 6 Unit' },
+        { key: 'office_name', label: 'Office Unit' }
+    ];
+
+    function htmlEscape(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function fetchAllUsersForExport(dt) {
+        return $.ajax({
+            url: 'admin_ajax_users_list.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                draw: 1,
+                start: 0,
+                length: 1000000,
+                search: { value: dt.search() },
+                personnel_type: $('#filterPersonnelType').val(),
+                division_unit_id: $('#filterDivisionUnit').val(),
+                school_id: $('#filterSchool').val(),
+                office_unit_id: $('#filterOffice').val(),
+                role_id: $('#filterRole').val()
+            }
+        }).then(function(response) {
+            return response && response.data ? response.data : [];
+        });
+    }
+
+    function downloadExcel(rows) {
+        let tableHtml = '<table><thead><tr>';
+        exportColumns.forEach(function(column) {
+            tableHtml += '<th>' + htmlEscape(column.label) + '</th>';
+        });
+        tableHtml += '</tr></thead><tbody>';
+        rows.forEach(function(row) {
+            tableHtml += '<tr>';
+            exportColumns.forEach(function(column) {
+                tableHtml += '<td>' + htmlEscape(row[column.key]) + '</td>';
+            });
+            tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+
+        const blob = new Blob(['\ufeff' + tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'PRIMEHR_User_List.xls';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadPdf(rows) {
+        if (!window.pdfMake) {
+            PrimeUI.error('PDF export tools are not loaded. Please refresh the page.');
+            return;
+        }
+
+        const body = [
+            exportColumns.map(function(column) {
+                return { text: column.label, style: 'tableHeader' };
+            })
+        ];
+
+        rows.forEach(function(row) {
+            body.push(exportColumns.map(function(column) {
+                return String(row[column.key] ?? '');
+            }));
+        });
+
+        pdfMake.createPdf({
+            pageOrientation: 'landscape',
+            pageSize: 'A4',
+            content: [
+                { text: 'PRIMEHR User List', style: 'title' },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['*', 'auto', '*', '*', '*', '*', '*'],
+                        body: body
+                    },
+                    layout: 'lightHorizontalLines'
+                }
+            ],
+            styles: {
+                title: { fontSize: 16, bold: true, margin: [0, 0, 0, 12] },
+                tableHeader: { bold: true, fillColor: '#eff6ff', color: '#0f172a' }
+            },
+            defaultStyle: { fontSize: 8 }
+        }).download('PRIMEHR_User_List.pdf');
+    }
+
+    function printRows(rows) {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            PrimeUI.error('Please allow pop-ups to print the user list.');
+            return;
+        }
+
+        let rowsHtml = '';
+        rows.forEach(function(row) {
+            rowsHtml += '<tr>';
+            exportColumns.forEach(function(column) {
+                rowsHtml += '<td>' + htmlEscape(row[column.key]) + '</td>';
+            });
+            rowsHtml += '</tr>';
+        });
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+              <head>
+                <title>PRIMEHR User List</title>
+                <style>
+                  body { font-family: Arial, sans-serif; color: #0f172a; }
+                  h2 { margin-bottom: 12px; }
+                  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                  th, td { border: 1px solid #dbe5f1; padding: 7px; text-align: left; }
+                  th { background: #eff6ff; }
+                </style>
+              </head>
+              <body>
+                <h2>PRIMEHR User List</h2>
+                <table>
+                  <thead>
+                    <tr>${exportColumns.map(column => '<th>' + htmlEscape(column.label) + '</th>').join('')}</tr>
+                  </thead>
+                  <tbody>${rowsHtml}</tbody>
+                </table>
+              </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    }
+
+    function exportAllRows(e, dt, button, config) {
+        const buttonNode = $(button);
+        const originalText = buttonNode.html();
+        buttonNode.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Preparing...');
+
+        fetchAllUsersForExport(dt)
+            .then(function(rows) {
+                if (!rows.length) {
+                    PrimeUI.error('No user records found for export.');
+                    return;
+                }
+
+                if (config.exportType === 'excel') downloadExcel(rows);
+                if (config.exportType === 'pdf') downloadPdf(rows);
+                if (config.exportType === 'print') printRows(rows);
+            })
+            .catch(function() {
+                PrimeUI.error('Unable to export the user list. Please try again.');
+            })
+            .always(function() {
+                buttonNode.prop('disabled', false).html(originalText);
+            });
+    }
 
     const table = $('#userTable').DataTable({
         processing: true,
@@ -197,6 +394,48 @@ $(document).ready(function () {
             }
         },
         pageLength: 10,
+        dom:
+            "<'row align-items-center mb-2'<'col-md-6'l><'col-md-6'f>>" +
+            "<'row mb-3'<'col-12 user-export-actions'B>>" +
+            "rt" +
+            "<'row align-items-center mt-3'<'col-md-5'i><'col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Export Excel',
+                title: 'PRIMEHR User List',
+                className: 'btn btn-success user-export-btn',
+                exportType: 'excel',
+                action: exportAllRows,
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5, 6]
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="bi bi-file-earmark-pdf"></i> Export PDF',
+                title: 'PRIMEHR User List',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                className: 'btn btn-danger user-export-btn',
+                exportType: 'pdf',
+                action: exportAllRows,
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5, 6]
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> Print',
+                title: 'PRIMEHR User List',
+                className: 'btn btn-primary user-export-btn',
+                exportType: 'print',
+                action: exportAllRows,
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5, 6]
+                }
+            }
+        ],
         columns: [
             { data: "name" },
             { data: "school_id" },

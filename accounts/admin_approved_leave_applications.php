@@ -175,6 +175,7 @@ $months = [
     <script src="src/plugins/datatables/js/dataTables.buttons.min.js"></script>
     <script src="src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
     <script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.print.min.js"></script>
     <script src="src/plugins/datatables/js/jszip.min.js"></script>
     <script src="src/plugins/datatables/js/pdfmake.min.js"></script>
     <script src="src/plugins/datatables/js/vfs_fonts.js"></script>
@@ -193,25 +194,6 @@ const tbl = $('#tblApprovedApps').DataTable({
   },
   processing: true,
   responsive: true,
-  dom: 'Bfrtip',
-  buttons: [
-    {
-      extend: 'csvHtml5',
-      text: 'Export CSV',
-      className: 'btn btn-sm btn-outline-success',
-      title: 'approved_leave_applications',
-      exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
-    },
-    {
-      extend: 'pdfHtml5',
-      text: 'Export PDF',
-      className: 'btn btn-sm btn-outline-danger',
-      title: 'Approved Leave Applications',
-      orientation: 'landscape',
-      pageSize: 'A4',
-      exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
-    }
-  ],
   columns: [
     {data:'employee_id', defaultContent:'-'},
     {data:'name'},
@@ -254,3 +236,6 @@ $('#resetFilters').on('click', function() {
     </script>
   </body>
 </html>
+
+
+

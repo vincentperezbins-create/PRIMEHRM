@@ -1,4 +1,11 @@
 $('document').ready(function(){
+	var hasPrimeExport = window.PrimeUI && $.fn.dataTable && $.fn.dataTable.Buttons;
+	var compactExportDom = hasPrimeExport ? window.PrimeUI.exportDom() : undefined;
+	var compactExportButtons = hasPrimeExport ? window.PrimeUI.exportButtons({
+		title: document.title || 'PRIMEHR Export',
+		columns: ':visible:not(.datatable-nosort)'
+	}) : undefined;
+
 	$('.data-table').DataTable({
 		scrollCollapse: true,
 		autoWidth: false,
@@ -16,6 +23,7 @@ $('document').ready(function(){
 				previous: '<i class="ion-chevron-left"></i>'  
 			}
 		},
+		...(compactExportDom ? { dom: compactExportDom, buttons: compactExportButtons } : {}),
 	});
 
 	$('.data-table-export').DataTable({
@@ -35,8 +43,8 @@ $('document').ready(function(){
 				previous: '<i class="ion-chevron-left"></i>'  
 			}
 		},
-		dom: 'Bfrtp',
-		buttons: [
+		dom: compactExportDom || 'Bfrtp',
+		buttons: compactExportButtons || [
 		'copy', 'csv', 'pdf', 'print'
 		]
 	});

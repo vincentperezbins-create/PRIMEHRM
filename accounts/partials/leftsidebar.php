@@ -111,6 +111,39 @@
         </ul>
     </li>
 
+    <!-- REWARDS & RECOGNITION -->
+    <li class="dropdown">
+        <a href="javascript:;" class="dropdown-toggle">
+            <span class="micon bi bi-trophy"></span>
+            <span class="mtext">Rewards & Recognition</span>
+        </a>
+        <ul class="submenu">
+            <li><a href="rewards_dashboard.php">Dashboard</a></li>
+            <li><a href="admin_rewards_programs.php">Award Programs</a></li>
+            <li><a href="admin_rewards_nominees.php">Nominees</a></li>
+            <li><a href="rewards_submit_nomination.php">Submit Nomination</a></li>
+            <li><a href="rewards_my_recognitions.php">My Recognitions</a></li>
+        </ul>
+    </li>
+
+    <!-- LEARNING & DEVELOPMENT -->
+    <li class="dropdown">
+        <a href="javascript:;" class="dropdown-toggle">
+            <span class="micon bi bi-mortarboard"></span>
+            <span class="mtext">Learning & Development</span>
+        </a>
+        <ul class="submenu">
+            <li><a href="ld_dashboard.php">Dashboard</a></li>
+            <li><a href="admin_ld_programs.php">L&D Master Plan</a></li>
+            <li><a href="admin_ld_trainings.php">All Trainings</a></li>
+            <li><a href="admin_ld_participants.php">Participants</a></li>
+            <li><a href="admin_ld_certificates.php">Certificate Validation</a></li>
+            <li><a href="ld_available_trainings.php">Available Trainings</a></li>
+            <li><a href="ld_certificate_submit.php">Submit Certificate</a></li>
+            <li><a href="ld_my_trainings.php">My Trainings</a></li>
+        </ul>
+    </li>
+
     <!-- CALENDAR -->
     <li>
         <a href="calendar.html" class="dropdown-toggle no-arrow">
@@ -172,6 +205,33 @@
                     <li><a href="user_leave_balance.php">My Balance</a></li>
                   </ul>
                 </li>
+                <li class="dropdown">
+                  <a href="javascript:;" class="dropdown-toggle">
+                    <span class="micon bi bi-trophy"></span>
+                    <span class="mtext">Rewards</span>
+                  </a>
+                  <ul class="submenu">
+                    <li><a href="rewards_dashboard.php">Dashboard</a></li>
+                    <li><a href="admin_rewards_programs.php">Award Programs</a></li>
+                    <li><a href="admin_rewards_nominees.php">Nominees</a></li>
+                    <li><a href="rewards_my_recognitions.php">My Recognitions</a></li>
+                  </ul>
+                </li>
+                <li class="dropdown">
+                  <a href="javascript:;" class="dropdown-toggle">
+                    <span class="micon bi bi-mortarboard"></span>
+                    <span class="mtext">L&D</span>
+                  </a>
+                  <ul class="submenu">
+                    <li><a href="ld_dashboard.php">Dashboard</a></li>
+                    <li><a href="admin_ld_programs.php">L&D Master Plan</a></li>
+                    <li><a href="admin_ld_trainings.php">Trainings</a></li>
+                    <li><a href="admin_ld_participants.php">Participants</a></li>
+                    <li><a href="admin_ld_certificates.php">Certificate Validation</a></li>
+                    <li><a href="ld_certificate_submit.php">Submit Certificate</a></li>
+                    <li><a href="ld_my_trainings.php">My Trainings</a></li>
+                  </ul>
+                </li>
                 <li>
                   <a href="profile.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-person"></span>
@@ -203,8 +263,8 @@
                 </li>
                 <li class="dropdown">
                   <a href="javascript:;" class="dropdown-toggle">
-                    <span class="micon bi bi-person-check"></span>
-                    <span class="mtext">My Leave</span>
+                   <span class="micon bi bi-person-check"></span>
+                   <span class="mtext">My Leave</span>
                   </a>
                   <ul class="submenu">
                     <li><a href="user_leave_apply.php">Apply Leave</a></li>
@@ -275,6 +335,30 @@
                   <li><a href="user_leave_balance.php">My Balance</a></li>
                 </ul>
               </li>
+              <li class="dropdown">
+                <a href="javascript:;" class="dropdown-toggle">
+                 <span class="micon bi bi-trophy"></span>
+                 <span class="mtext">Rewards</span>
+                </a>
+                <ul class="submenu">
+                  <li><a href="rewards_dashboard.php">Dashboard</a></li>
+                  <li><a href="rewards_submit_nomination.php">Submit Nomination</a></li>
+                  <li><a href="rewards_my_recognitions.php">My Recognitions</a></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="javascript:;" class="dropdown-toggle">
+                 <span class="micon bi bi-mortarboard"></span>
+                 <span class="mtext">L&D</span>
+                </a>
+                <ul class="submenu">
+                  <li><a href="ld_dashboard.php">Dashboard</a></li>
+                  <li><a href="ld_available_trainings.php">Nominate Staff</a></li>
+                  <li><a href="admin_ld_participants.php">School Participants</a></li>
+                  <li><a href="admin_ld_certificates.php">Certificate Validation</a></li>
+                  <li><a href="ld_my_trainings.php">My Trainings</a></li>
+                </ul>
+              </li>
               <li>
                 <a href="profile.php" class="dropdown-toggle no-arrow">
                  <span class="micon bi bi-person"></span>
@@ -323,6 +407,32 @@
                           <li><a href="user_leave_apply.php">Apply Leave</a></li>
                           <li><a href="user_leave_history.php">Leave History</a></li>
                           <li><a href="user_leave_balance.php">My Balance</a></li>
+                      </ul>
+                  </li>
+
+                  <!-- REWARDS -->
+                  <li class="dropdown">
+                      <a href="javascript:;" class="dropdown-toggle">
+                          <span class="micon bi bi-trophy"></span>
+                          <span class="mtext">Rewards</span>
+                      </a>
+                      <ul class="submenu">
+                          <li><a href="rewards_dashboard.php">Dashboard</a></li>
+                          <li><a href="rewards_my_recognitions.php">My Recognitions</a></li>
+                      </ul>
+                  </li>
+
+                  <!-- L&D -->
+                  <li class="dropdown">
+                      <a href="javascript:;" class="dropdown-toggle">
+                          <span class="micon bi bi-mortarboard"></span>
+                          <span class="mtext">L&D</span>
+                      </a>
+                      <ul class="submenu">
+                          <li><a href="ld_dashboard.php">Dashboard</a></li>
+                          <li><a href="ld_available_trainings.php">Available Trainings</a></li>
+                          <li><a href="ld_certificate_submit.php">Submit Certificate</a></li>
+                          <li><a href="ld_my_trainings.php">My Trainings</a></li>
                       </ul>
                   </li>
 

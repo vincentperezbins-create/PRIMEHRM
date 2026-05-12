@@ -69,6 +69,13 @@ $total = (int) $pdo->query("SELECT COUNT(*) FROM sdopang1_ipcrf")->fetchColumn()
 <script src="src/plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
 <script src="src/plugins/datatables/js/dataTables.responsive.min.js"></script>
 <script src="src/plugins/datatables/js/responsive.bootstrap4.min.js"></script>
+<script src="src/plugins/datatables/js/dataTables.buttons.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
+<script src="src/plugins/datatables/js/buttons.print.min.js"></script>
+<script src="src/plugins/datatables/js/jszip.min.js"></script>
+<script src="src/plugins/datatables/js/pdfmake.min.js"></script>
+<script src="src/plugins/datatables/js/vfs_fonts.js"></script>
 <script>
 const ipcrfTable = $('#ipcrfTable').DataTable({
   ajax: {
@@ -93,5 +100,8 @@ $('#filterStatus').change(function(){ ipcrfTable.ajax.reload(); });
 </script>
 </body>
 </html>
+
+
+
 
 

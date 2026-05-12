@@ -92,15 +92,15 @@ foreach ($leaveTypes as $type) {
                   <small id="balanceHint" class="form-text text-muted">Select a leave type to see your balance.</small>
                 </div>
 
-                <div class="col-md-3 mb-3">
-                  <label class="form-label">From</label>
-                  <input id="dateFrom" type="date" name="date_from" class="form-control" required>
-                </div>
+                <!-- <div class="col-md-3 mb-3"> -->
+                 <!--  <label class="form-label">From</label> -->
+                  <input id="dateFrom" type="hidden" name="date_from" class="form-control" required style="">
+               <!--  </div> -->
 
-                <div class="col-md-3 mb-3">
-                  <label class="form-label">To</label>
-                  <input id="dateTo" type="date" name="date_to" class="form-control" required>
-                </div>
+                <!-- <div class="col-md-3 mb-3"> -->
+                  <!-- <label class="form-label">To</label> -->
+                  <input id="dateTo" type="hidden" name="date_to" class="form-control" required>
+                <!-- </div> -->
 
                 <div class="col-md-2 mb-3">
                   <label class="form-label">Work Days</label>

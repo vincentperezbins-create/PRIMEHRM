@@ -179,6 +179,153 @@ small,
   font-size: 12px;
 }
 
+.prime-dt-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.prime-export-actions,
+.user-export-actions .dt-buttons,
+.school-export-actions .dt-buttons,
+.prime-export-actions .dt-buttons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.prime-export-actions .dt-buttons {
+  display: inline-flex;
+}
+
+.prime-export-btn,
+.user-export-btn,
+.school-export-btn {
+  position: relative;
+  min-height: 36px;
+  border: 0 !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: hidden;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.10) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.prime-export-btn::before,
+.user-export-btn::before,
+.school-export-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.prime-export-btn:hover,
+.prime-export-btn:focus,
+.user-export-btn:hover,
+.user-export-btn:focus,
+.school-export-btn:hover,
+.school-export-btn:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14) !important;
+}
+
+.prime-export-btn i,
+.user-export-btn i,
+.school-export-btn i {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(8px);
+}
+
+.prime-export-btn .export-btn-label,
+.user-export-btn .export-btn-label,
+.school-export-btn .export-btn-label {
+  position: relative;
+  z-index: 1;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.prime-export-btn--excel,
+.user-export-btn--excel,
+.school-export-btn--excel,
+.school-export-btn.btn-success {
+  color: #fff !important;
+  background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+}
+
+.prime-export-btn--pdf,
+.user-export-btn--pdf,
+.school-export-btn--pdf,
+.school-export-btn.btn-danger {
+  color: #fff !important;
+  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+}
+
+.prime-export-btn--print,
+.user-export-btn--print,
+.school-export-btn--print,
+.school-export-btn.btn-secondary {
+  color: #2563eb !important;
+  background: #fff !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.11) !important;
+}
+
+.prime-export-btn--print::before,
+.user-export-btn--print::before,
+.school-export-btn--print::before,
+.school-export-btn.btn-secondary::before {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0));
+}
+
+.prime-export-btn--print i,
+.user-export-btn--print i,
+.school-export-btn--print i,
+.school-export-btn.btn-secondary i {
+  background: rgba(37, 99, 235, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.prime-export-btn--print:hover,
+.prime-export-btn--print:focus,
+.user-export-btn--print:hover,
+.user-export-btn--print:focus,
+.school-export-btn--print:hover,
+.school-export-btn--print:focus,
+.school-export-btn.btn-secondary:hover,
+.school-export-btn.btn-secondary:focus {
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.15) !important;
+}
+
 .btn-primary,
 .btn-add,
 .btn-create,
@@ -998,9 +1145,11 @@ label.required::after {
 }
 
 .school-export-actions .dt-buttons {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .school-export-btn {

@@ -22,18 +22,102 @@ $roles = $pdo->query("SELECT role_id, role_name FROM sdopang1_roles ORDER BY rol
 <html>
  <?php require_once __DIR__ . '/partials/head.php'; ?>
   <style>
-    .user-export-actions .dt-buttons,
-    div.dt-buttons {
-      display: flex;
+    .user-export-actions .dt-buttons {
+      display: inline-flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 7px;
+      align-items: center;
+      width: fit-content;
+      max-width: 100%;
     }
 
     .user-export-btn {
-      border-radius: 999px !important;
+      position: relative;
+      min-height: 36px;
+      border: 0 !important;
+      border-radius: 10px !important;
       padding: 8px 14px !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      overflow: hidden;
       font-size: 13px !important;
       font-weight: 800 !important;
+      letter-spacing: 0;
+      line-height: 1;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.1) !important;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+    }
+
+    .user-export-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .user-export-btn:hover,
+    .user-export-btn:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14) !important;
+    }
+
+    .user-export-btn i {
+      position: relative;
+      z-index: 1;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 22px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+      backdrop-filter: blur(8px);
+    }
+
+    .user-export-btn .export-btn-label {
+      position: relative;
+      z-index: 1;
+      line-height: 1.15;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .user-export-btn--excel {
+      color: #fff !important;
+      background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+    }
+
+    .user-export-btn--pdf {
+      color: #fff !important;
+      background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+    }
+
+    .user-export-btn--print {
+      color: #2563eb !important;
+      background: #fff !important;
+      border: 2px solid #2563eb !important;
+      box-shadow: 0 5px 12px rgba(37, 99, 235, 0.11) !important;
+    }
+
+    .user-export-btn--print::before {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0));
+    }
+
+    .user-export-btn--print i {
+      background: rgba(37, 99, 235, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .user-export-btn--print:hover,
+    .user-export-btn--print:focus {
+      border-color: #1d4ed8 !important;
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.15) !important;
     }
   </style>
   <body>
@@ -402,9 +486,9 @@ $(document).ready(function () {
         buttons: [
             {
                 extend: 'excelHtml5',
-                text: '<i class="bi bi-file-earmark-excel"></i> Export Excel',
+                text: '<i class="bi bi-file-earmark-excel"></i><span class="export-btn-label">Export Excel</span>',
                 title: 'PRIMEHR User List',
-                className: 'btn btn-success user-export-btn',
+                className: 'btn user-export-btn user-export-btn--excel',
                 exportType: 'excel',
                 action: exportAllRows,
                 exportOptions: {
@@ -413,11 +497,11 @@ $(document).ready(function () {
             },
             {
                 extend: 'pdfHtml5',
-                text: '<i class="bi bi-file-earmark-pdf"></i> Export PDF',
+                text: '<i class="bi bi-file-earmark-pdf"></i><span class="export-btn-label">Export PDF</span>',
                 title: 'PRIMEHR User List',
                 orientation: 'landscape',
                 pageSize: 'A4',
-                className: 'btn btn-danger user-export-btn',
+                className: 'btn user-export-btn user-export-btn--pdf',
                 exportType: 'pdf',
                 action: exportAllRows,
                 exportOptions: {
@@ -426,9 +510,9 @@ $(document).ready(function () {
             },
             {
                 extend: 'print',
-                text: '<i class="bi bi-printer"></i> Print',
+                text: '<i class="bi bi-printer"></i><span class="export-btn-label">Print</span>',
                 title: 'PRIMEHR User List',
-                className: 'btn btn-primary user-export-btn',
+                className: 'btn user-export-btn user-export-btn--print',
                 exportType: 'print',
                 action: exportAllRows,
                 exportOptions: {

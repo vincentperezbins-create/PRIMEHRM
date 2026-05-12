@@ -2,10 +2,12 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/ld_helpers.php';
 
 $userModel = new User($pdo);
 require_login();
 require_once __DIR__ . '/partials/session.php';
+ld_ensure_schema($pdo);
 
 $stmt = $pdo->prepare("
     SELECT
@@ -107,6 +109,8 @@ $avatarSrc = trim((string) ($profile['user_image'] ?? ''));
 $profileSuccessMessage = $_SESSION['success_message'] ?? '';
 $profileErrorMessage = $_SESSION['error_message'] ?? '';
 unset($_SESSION['success_message'], $_SESSION['error_message']);
+$profileCertificates = ld_certificate_submissions($pdo, $currentUser, null, 50);
+$profileGeneratedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50);
 ?>
 <!DOCTYPE html>
 <html>
@@ -609,6 +613,44 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
               <div class="col-lg-3 col-md-6 mb-3 profile-field"><label>Validate OPCRF</label><input class="form-control" readonly value="<?= $h($yesNo($profile['can_validate_opcrf'])) ?>"></div>
               <div class="col-lg-3 col-md-6 mb-3 profile-field"><label>Validate IPCRF</label><input class="form-control" readonly value="<?= $h($yesNo($profile['can_validate_ipcrf'])) ?>"></div>
               <div class="col-lg-3 col-md-6 mb-3 profile-field"><label>Validate Leave</label><input class="form-control" readonly value="<?= $h($yesNo($profile['can_validate_leave'])) ?>"></div>
+            </div>
+          </section>
+
+          <section class="profile-form-section">
+            <div class="profile-form-heading">
+              <h5><span><i class="dw dw-certificate"></i> 10. </span>L&amp;D Certificates</h5>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <p class="mb-0 text-muted">Approved certificates become part of your profile record. Pending certificates are waiting for validation.</p>
+                  <a class="btn btn-outline-primary btn-sm" href="ld_certificate_submit.php">Add Certificate</a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered mb-0">
+                    <thead><tr><th>Certificate / Training</th><th>Status</th><th>Submitted</th><th>File</th></tr></thead>
+                    <tbody>
+                      <?php foreach ($profileGeneratedCertificates as $certificate): ?>
+                        <tr>
+                          <td><?= $h($certificate['training_title']) ?></td>
+                          <td><?= ld_status_badge('Approved') ?></td>
+                          <td><?= $h($displayDate($certificate['generated_at'])) ?></td>
+                          <td><a class="btn btn-sm btn-outline-primary" href="ld_certificate_view.php?id=<?= (int) $certificate['generated_certificate_id'] ?>" target="_blank">View E-Certificate</a><?php if (!empty($certificate['pdf_path'])): ?> <a class="btn btn-sm btn-primary" href="<?= $h($certificate['pdf_path']) ?>" target="_blank">PDF</a><?php endif; ?></td>
+                        </tr>
+                      <?php endforeach; ?>
+                      <?php foreach ($profileCertificates as $certificate): ?>
+                        <tr>
+                          <td><?= $h($certificate['training_title']) ?></td>
+                          <td><?= ld_status_badge($certificate['status']) ?></td>
+                          <td><?= $h($displayDate($certificate['submitted_at'])) ?></td>
+                          <td><a class="btn btn-sm btn-outline-primary" href="<?= $h($certificate['certificate_path']) ?>" target="_blank">View</a></td>
+                        </tr>
+                      <?php endforeach; ?>
+                      <?php if (!$profileCertificates && !$profileGeneratedCertificates): ?><tr><td colspan="4" class="text-center text-muted">No certificate submissions yet.</td></tr><?php endif; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </section>
 

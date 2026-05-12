@@ -256,6 +256,13 @@ $documents = $pdo->query("
     <script src="src/plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
     <script src="src/plugins/datatables/js/dataTables.responsive.min.js"></script>
     <script src="src/plugins/datatables/js/responsive.bootstrap4.min.js"></script>
+    <script src="src/plugins/datatables/js/dataTables.buttons.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
+    <script src="src/plugins/datatables/js/buttons.print.min.js"></script>
+    <script src="src/plugins/datatables/js/jszip.min.js"></script>
+    <script src="src/plugins/datatables/js/pdfmake.min.js"></script>
+    <script src="src/plugins/datatables/js/vfs_fonts.js"></script>
     <script src="vendors/scripts/dashboard3.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- SUCCESS ALERT -->
@@ -298,7 +305,6 @@ $documents = $pdo->query("
           table = $('#admin201Table').DataTable({
               pageLength: 10,
               order: [[7, 'desc']],
-              dom: 'rt<"d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3"ip>',
               language: {
                   emptyTable: 'No 201 files found.',
                   zeroRecords: 'No 201 files match the selected filters.'
@@ -344,6 +350,9 @@ $documents = $pdo->query("
     <!-- End Google Tag Manager (noscript) -->
   </body>
 </html>
+
+
+
 
 
 

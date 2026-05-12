@@ -294,6 +294,7 @@ document.querySelectorAll('.openModal').forEach(btn => {
 		<script src="src/plugins/datatables/js/buttons.print.min.js"></script>
 		<script src="src/plugins/datatables/js/buttons.html5.min.js"></script>
 		<script src="src/plugins/datatables/js/buttons.flash.min.js"></script>
+		<script src="src/plugins/datatables/js/jszip.min.js"></script>
 		<script src="src/plugins/datatables/js/pdfmake.min.js"></script>
 		<script src="src/plugins/datatables/js/vfs_fonts.js"></script>
 		<!-- Datatable Setting js -->

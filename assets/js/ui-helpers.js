@@ -69,6 +69,84 @@
       return '';
     },
 
+    exportDom() {
+      return '<"prime-dt-top"lf><"prime-export-actions"B>rt<"d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3"ip>';
+    },
+
+    exportButtons(options = {}) {
+      const title = options.title || document.title || 'PRIMEHR Export';
+      const columns = options.columns || ':visible:not(.datatable-nosort)';
+      const extra = options.exportOptions || {};
+      const exportOptions = Object.assign({ columns }, extra);
+
+      return [
+        {
+          extend: 'excelHtml5',
+          text: '<i class="bi bi-file-earmark-excel"></i><span class="export-btn-label">Export Excel</span>',
+          title,
+          className: 'btn prime-export-btn prime-export-btn--excel',
+          exportOptions
+        },
+        {
+          extend: 'pdfHtml5',
+          text: '<i class="bi bi-file-earmark-pdf"></i><span class="export-btn-label">Export PDF</span>',
+          title,
+          orientation: options.orientation || 'landscape',
+          pageSize: options.pageSize || 'A4',
+          className: 'btn prime-export-btn prime-export-btn--pdf',
+          exportOptions
+        },
+        {
+          extend: 'print',
+          text: '<i class="bi bi-printer"></i><span class="export-btn-label">Print</span>',
+          title,
+          className: 'btn prime-export-btn prime-export-btn--print',
+          exportOptions
+        }
+      ];
+    },
+
+    attachExportToolbar(settings) {
+      if (!window.jQuery || !jQuery.fn || !jQuery.fn.dataTable || !jQuery.fn.dataTable.Buttons || !settings) {
+        return;
+      }
+
+      const api = new jQuery.fn.dataTable.Api(settings);
+      const wrapper = jQuery(api.table().container());
+      if (!wrapper.length || wrapper.find('.dt-buttons').length) {
+        return;
+      }
+
+      const headers = jQuery(api.table().header()).find('th').toArray();
+      const exportColumns = headers
+        .map((th, index) => ({ index, label: normalize(th.textContent).toLowerCase(), th }))
+        .filter((column) => {
+          if (column.th.classList.contains('datatable-nosort')) return false;
+          if (column.label === 'action' || column.label === 'actions' || column.label === '') return false;
+          return true;
+        })
+        .map((column) => column.index);
+
+      if (!exportColumns.length) {
+        return;
+      }
+
+      try {
+        new jQuery.fn.dataTable.Buttons(api, {
+          buttons: PrimeUI.exportButtons({
+            title: document.title || 'PRIMEHR Export',
+            columns: exportColumns
+          })
+        });
+
+        const toolbar = jQuery('<div class="prime-export-actions mb-2"></div>');
+        toolbar.append(api.buttons().container());
+        wrapper.find('.dataTables_filter').first().after(toolbar);
+      } catch (error) {
+        if (window.console) console.warn('Export toolbar skipped:', error);
+      }
+    },
+
     success(message, title = 'Saved') {
       if (!swalAvailable()) return alert(message || title);
       return Swal.fire({
@@ -198,6 +276,14 @@
     PrimeUI.enhance();
     if (window.jQuery) {
       window.jQuery(document).on('draw.dt', () => PrimeUI.enhance());
+      window.jQuery(document).on('init.dt', function (_event, settings) {
+        PrimeUI.attachExportToolbar(settings);
+      });
+      window.jQuery('table').each(function () {
+        if (jQuery.fn.dataTable && jQuery.fn.dataTable.isDataTable(this)) {
+          PrimeUI.attachExportToolbar(jQuery(this).DataTable().settings()[0]);
+        }
+      });
     }
   });
 })(window, document);

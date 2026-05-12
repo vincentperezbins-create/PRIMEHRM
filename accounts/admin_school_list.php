@@ -13,6 +13,102 @@ $totalSchool = $pdo->query("SELECT COUNT(*) FROM sdopang1schoollist")->fetchColu
 <!DOCTYPE html>
 <html>
 <?php require_once __DIR__ . '/partials/head.php'; ?>
+<style>
+    .school-export-actions {
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .school-export-actions .dt-buttons {
+        display: inline-flex !important;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+        width: fit-content !important;
+        max-width: 100%;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn,
+    .school-export-actions .dt-buttons .buttons-excel,
+    .school-export-actions .dt-buttons .buttons-pdf,
+    .school-export-actions .dt-buttons .buttons-print,
+    .school-export-actions .dt-buttons button.school-export-btn,
+    .school-export-actions .dt-buttons a.school-export-btn {
+        position: relative;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 36px;
+        padding: 8px 14px !important;
+        margin: 0 !important;
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        line-height: 1;
+        letter-spacing: 0;
+        box-shadow: 0 5px 12px rgba(15, 23, 42, 0.10) !important;
+        background-image: none !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn:hover,
+    .school-export-actions .dt-buttons .school-export-btn:focus,
+    .school-export-actions .dt-buttons .buttons-excel:hover,
+    .school-export-actions .dt-buttons .buttons-excel:focus,
+    .school-export-actions .dt-buttons .buttons-pdf:hover,
+    .school-export-actions .dt-buttons .buttons-pdf:focus,
+    .school-export-actions .dt-buttons .buttons-print:hover,
+    .school-export-actions .dt-buttons .buttons-print:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14) !important;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn i,
+    .school-export-actions .dt-buttons .buttons-excel i,
+    .school-export-actions .dt-buttons .buttons-pdf i,
+    .school-export-actions .dt-buttons .buttons-print i {
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn--excel,
+    .school-export-actions .dt-buttons .buttons-excel {
+        color: #fff !important;
+        background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+        background-color: #16a34a !important;
+        background-image: linear-gradient(135deg, #16a34a, #22c55e) !important;
+        border-color: #16a34a !important;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn--pdf,
+    .school-export-actions .dt-buttons .buttons-pdf {
+        color: #fff !important;
+        background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+        background-color: #dc2626 !important;
+        background-image: linear-gradient(135deg, #dc2626, #ef4444) !important;
+        border-color: #dc2626 !important;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn--print,
+    .school-export-actions .dt-buttons .buttons-print {
+        color: #2563eb !important;
+        background: #fff !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 5px 12px rgba(37, 99, 235, 0.11) !important;
+    }
+
+    .school-export-actions .dt-buttons .school-export-btn--print:hover,
+    .school-export-actions .dt-buttons .school-export-btn--print:focus,
+    .school-export-actions .dt-buttons .buttons-print:hover,
+    .school-export-actions .dt-buttons .buttons-print:focus {
+        border-color: #1d4ed8 !important;
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.15) !important;
+    }
+</style>
 <body>
 
 <?php require_once __DIR__ . '/partials/preloader.php'; ?>
@@ -287,27 +383,27 @@ $(document).ready(function () {
         buttons: [
             {
                 extend: 'excelHtml5',
-                text: '<i class="bi bi-file-earmark-excel"></i> Export Excel',
+                text: '<i class="bi bi-file-earmark-excel"></i><span class="export-btn-label">Export Excel</span>',
                 title: 'PRIMEHR School List',
-                className: 'btn btn-success school-export-btn',
+                className: 'btn school-export-btn school-export-btn--excel',
                 exportType: 'excel',
                 action: exportAllRows
             },
             {
                 extend: 'pdfHtml5',
-                text: '<i class="bi bi-file-earmark-pdf"></i> Export PDF',
+                text: '<i class="bi bi-file-earmark-pdf"></i><span class="export-btn-label">Export PDF</span>',
                 title: 'PRIMEHR School List',
                 orientation: 'landscape',
                 pageSize: 'A4',
-                className: 'btn btn-danger school-export-btn',
+                className: 'btn school-export-btn school-export-btn--pdf',
                 exportType: 'pdf',
                 action: exportAllRows
             },
             {
                 extend: 'print',
-                text: '<i class="bi bi-printer"></i> Print',
+                text: '<i class="bi bi-printer"></i><span class="export-btn-label">Print</span>',
                 title: 'PRIMEHR School List',
-                className: 'btn btn-secondary school-export-btn',
+                className: 'btn school-export-btn school-export-btn--print',
                 exportType: 'print',
                 action: exportAllRows
             }

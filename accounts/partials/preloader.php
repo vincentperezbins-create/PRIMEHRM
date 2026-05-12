@@ -1,4 +1,4 @@
-<style>
+<!-- <style>
   .prime-preloader {
     position: fixed;
     inset: 0;
@@ -92,3 +92,4 @@
     <div class="prime-preloader-text loading-text">Loading...</div>
   </div>
 </div>
+ -->

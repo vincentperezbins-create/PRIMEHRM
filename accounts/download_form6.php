@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
+require_once __DIR__ . '/core/audit.php';
 require_once __DIR__ . '/core/form6_generator.php';
 
 require_login();
@@ -33,6 +34,8 @@ try {
     form6_populate_xlsx(form6_template_path(), $xlsxFile, $application, $pdo);
 
     $filename = form6_safe_filename('Form6_' . form6_full_name($application) . '_' . $applicationId) . '.xlsx';
+
+    audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'DOWNLOAD', 'Leave Management', $applicationId, 'Downloaded Form 6 leave document.');
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . $filename . '"');

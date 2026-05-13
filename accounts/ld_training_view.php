@@ -102,8 +102,9 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         <form method="POST" class="d-inline">
           <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
           <input type="hidden" name="action" value="generate_certificate_pdfs">
-          <button class="btn btn-outline-primary" type="submit">Generate PDFs</button>
+          <button class="btn btn-outline-primary" type="submit">Save PDFs Bulk</button>
         </form>
+        <a class="btn btn-outline-primary" href="ld_certificates_bulk_print.php?code=<?= urlencode($code) ?>" target="_blank">Print Bulk</a>
       <?php endif; ?>
       <a class="btn btn-outline-primary" href="admin_ld_trainings.php">Back to Trainings</a>
     </div>
@@ -150,7 +151,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
   <div class="row">
     <div class="col-12 mb-20"><div class="card-box pd-20 h-100">
-      <h5 class="mb-3">Generated E-Certificates</h5>
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+        <h5 class="mb-0">Generated E-Certificates</h5>
+        <?php if ($generatedCertificates): ?>
+          <a class="btn btn-sm btn-outline-primary" href="ld_certificates_bulk_print.php?code=<?= urlencode($code) ?>" target="_blank">Print Bulk</a>
+        <?php endif; ?>
+      </div>
       <div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Participant</th><th>School</th><th>Email</th><th>Certificate No.</th><th>Action</th></tr></thead><tbody>
         <?php foreach ($generatedCertificates as $certificate): ?><tr><td><?= htmlspecialchars($certificate['participant_name'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($certificate['school_name'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($certificate['participant_email'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($certificate['certificate_no'], ENT_QUOTES, 'UTF-8') ?></td><td><a class="btn btn-sm btn-outline-primary" href="ld_certificate_view.php?id=<?= (int) $certificate['generated_certificate_id'] ?>" target="_blank">View Certificate</a><?php if (!empty($certificate['pdf_path'])): ?> <a class="btn btn-sm btn-primary" href="<?= htmlspecialchars($certificate['pdf_path'], ENT_QUOTES, 'UTF-8') ?>" target="_blank">PDF</a><?php endif; ?></td></tr><?php endforeach; ?>
         <?php if (!$generatedCertificates): ?><tr><td colspan="5" class="text-center text-muted">No e-certificates generated yet.</td></tr><?php endif; ?>

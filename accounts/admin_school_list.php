@@ -354,6 +354,9 @@ $(document).ready(function () {
                     return;
                 }
 
+                if (window.auditTrack) {
+                    window.auditTrack(config.exportType === 'print' ? 'PRINT' : 'EXPORT', 'Schools', '', 'Exported school list as ' + config.exportType + '.');
+                }
                 if (config.exportType === 'excel') downloadExcel(rows);
                 if (config.exportType === 'pdf') downloadPdf(rows);
                 if (config.exportType === 'print') printRows(rows);

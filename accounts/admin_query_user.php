@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 
 
 require_login();
@@ -159,6 +160,9 @@ if (isset($_POST['btnadduser'])) {
         ':prc_license_number' => $prc_license_number
     ]);
 
+    if ($success) {
+        audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'CREATE', 'Users', $pdo->lastInsertId(), 'Created a user account.');
+    }
     $_SESSION['success_message'] = $success ? "User added successfully" : "Add failed";
 }
 
@@ -246,6 +250,9 @@ if (isset($_POST['btnupdateuser'])) {
         ':id' => $id
     ] + ($password !== '' ? [':password' => password_hash($password, PASSWORD_DEFAULT)] : []));
 
+    if ($success) {
+        audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'UPDATE', 'Users', $id, 'Updated a user account.');
+    }
     $_SESSION['success_message'] = $success ? "User updated successfully" : "Update failed";
 }
 
@@ -262,6 +269,9 @@ if (isset($_POST['btndeleteuser'])) {
     $stmt = $pdo->prepare("DELETE FROM sdopang1_user WHERE user_id = ?");
     $success = $stmt->execute([$id]);
 
+    if ($success) {
+        audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'DELETE', 'Users', $id, 'Deleted a user account.');
+    }
     $_SESSION['success_message'] = $success ? "User deleted successfully" : "Delete failed";
 }
 

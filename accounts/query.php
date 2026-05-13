@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 
 $userModel = new User($pdo);
 require_login();
@@ -116,6 +117,17 @@ if (isset($_POST['upload'])) {
 if (!$saveSuccess) {
     die("Save failed");
 }
+
+$auditAction = isset($_POST['update']) ? 'UPDATE' : 'UPLOAD';
+audit_log(
+    $pdo,
+    $user_id,
+    audit_current_fullname($pdo),
+    $auditAction,
+    '201 Files',
+    $file_name,
+    ($auditAction === 'UPDATE' ? 'Re-uploaded' : 'Uploaded') . ' a 201 file document.'
+);
 
 $_SESSION['success_message'] = $successMessage;
 

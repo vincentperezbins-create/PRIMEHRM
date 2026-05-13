@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
+require_once __DIR__ . '/core/audit.php';
 
 require_login();
 require_role([1]);
@@ -52,6 +53,8 @@ try {
         $_POST['principalID']
     ]);
 
+    audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'CREATE', 'Schools', $_POST['schoolID'], 'Created a school record.');
+
     echo json_encode(["status"=>"success"]);
     exit;
 }
@@ -74,6 +77,8 @@ try {
             $_POST['schoolID']
         ]);
 
+        audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'UPDATE', 'Schools', $_POST['schoolID'], 'Updated a school record.');
+
         echo json_encode(["status"=>"success"]);
         exit;
     }
@@ -82,6 +87,8 @@ try {
     if ($action === 'delete') {
         $stmt = $pdo->prepare("DELETE FROM sdopang1schoollist WHERE schoolID = ?");
         $stmt->execute([$_POST['schoolID']]);
+
+        audit_log($pdo, $_SESSION['user_id'] ?? null, audit_current_fullname($pdo), 'DELETE', 'Schools', $_POST['schoolID'], 'Deleted a school record.');
 
         echo json_encode(["status"=>"success"]);
         exit;

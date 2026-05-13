@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 require_once __DIR__ . '/core/leave_helpers.php';
 
 $userModel = new User($pdo);
@@ -79,6 +80,15 @@ try {
     }
 
     $pdo->commit();
+    audit_log(
+        $pdo,
+        $_SESSION['user_id'] ?? null,
+        audit_current_fullname($pdo),
+        $action === 'approve' ? 'APPROVE' : 'REJECT',
+        'School Leave',
+        $applicationId,
+        ($action === 'approve' ? 'Approved' : 'Rejected') . ' a school leave application.'
+    );
     leave_json(['status' => 'success']);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

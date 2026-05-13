@@ -1,3 +1,23 @@
+    <style>
+      .sidebar-menu #accordion-menu > li.sidebar-section-label {
+        display: block;
+        margin: 16px 20px 7px;
+        padding: 0;
+        color: #9b95b4;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        pointer-events: none;
+        background: transparent !important;
+      }
+
+      .sidebar-menu #accordion-menu > li.sidebar-section-label:first-child {
+        margin-top: 6px;
+      }
+    </style>
+
     <div class="left-side-bar">
       <div class="brand-logo">
         <a href="index.php">
@@ -27,6 +47,8 @@
         <?php if ($_SESSION['role_id'] == 1): ?>
 <ul id="accordion-menu">
 
+
+    <li class="sidebar-section-label">Main</li>
     <!-- HOME -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -40,6 +62,8 @@
         </ul>
     </li>
 
+
+    <li class="sidebar-section-label">Self Service</li>
     <!-- MY SUBMISSION -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -54,6 +78,8 @@
         </ul>
     </li>
 
+
+    <li class="sidebar-section-label">Administration</li>
     <!-- SETTINGS / MASTER DATA -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -66,10 +92,12 @@
             <li><a href="admin_district_list.php">District List</a></li>
             <li><a href="admin_document_types_list.php">Document Types (201 Files)</a></li>
             <li><a href="admin_notifications.php">Notifications</a></li>
+            <li><a href="admin_audit_logs.php">Audit Logs</a></li>
             <li><a href="admin_manual_generator.php">User Manual Generator</a></li>
         </ul>
     </li>
 
+    <li class="sidebar-section-label">Records</li>
     <!-- 201 FILES -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -82,6 +110,8 @@
         </ul>
     </li>
 
+
+    <li class="sidebar-section-label">HR Workflows</li>
     <!-- LEAVE MANAGEMENT -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -98,6 +128,7 @@
         </ul>
     </li>
 
+    <li class="sidebar-section-label">Performance</li>
     <!-- PERFORMANCE FORMS -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -111,6 +142,8 @@
         </ul>
     </li>
 
+
+    <li class="sidebar-section-label">Growth</li>
     <!-- REWARDS & RECOGNITION -->
     <li class="dropdown">
         <a href="javascript:;" class="dropdown-toggle">
@@ -144,6 +177,8 @@
         </ul>
     </li>
 
+
+    <li class="sidebar-section-label">Profile</li>
     <!-- CALENDAR -->
     <li>
         <a href="calendar.html" class="dropdown-toggle no-arrow">
@@ -164,12 +199,14 @@
 
             <?php if ($_SESSION['role_id'] != 1 && $hasValidatorTasks): ?>
               <ul id="accordion-menu">
+                <li class="sidebar-section-label">Main</li>
                 <li>
                   <a href="index.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-house"></span>
                     <span class="mtext">Welcome</span>
                   </a>
                 </li>
+                <li class="sidebar-section-label">Validation</li>
                 <li class="dropdown">
                   <a href="javascript:;" class="dropdown-toggle">
                     <span class="micon bi bi-check2-square"></span>
@@ -182,6 +219,7 @@
                     <?php if ($canValidateLeave): ?><li><a href="admin_leave_applications.php">Validate Leave</a></li><?php endif; ?>
                   </ul>
                 </li>
+                <li class="sidebar-section-label">Self Service</li>
                 <li class="dropdown">
                   <a href="javascript:;" class="dropdown-toggle">
                     <span class="micon bi bi-inbox"></span>
@@ -205,6 +243,7 @@
                     <li><a href="user_leave_balance.php">My Balance</a></li>
                   </ul>
                 </li>
+                <li class="sidebar-section-label">Growth</li>
                 <li class="dropdown">
                   <a href="javascript:;" class="dropdown-toggle">
                     <span class="micon bi bi-trophy"></span>
@@ -232,6 +271,7 @@
                     <li><a href="ld_my_trainings.php">My Trainings</a></li>
                   </ul>
                 </li>
+                <li class="sidebar-section-label">Profile</li>
                 <li>
                   <a href="profile.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-person"></span>
@@ -243,12 +283,14 @@
 
             <?php if (!$hasValidatorTasks && in_array((int) $_SESSION['role_id'], [2, 5, 6, 7], true)): ?>
               <ul id="accordion-menu">
+                <li class="sidebar-section-label">Main</li>
                 <li>
                   <a href="index.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-house"></span>
                     <span class="mtext">Welcome</span>
                   </a>
                 </li>
+                <li class="sidebar-section-label">Self Service</li>
                 <li class="dropdown">
                   <a href="javascript:;" class="dropdown-toggle">
                     <span class="micon bi bi-inbox"></span>
@@ -272,6 +314,7 @@
                     <li><a href="user_leave_balance.php">My Balance</a></li>
                   </ul>
                 </li>
+                <li class="sidebar-section-label">Profile</li>
                 <li>
                   <a href="profile.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-person"></span>
@@ -283,6 +326,7 @@
 
             <?php if (!$hasValidatorTasks && $_SESSION['role_id'] == 3): ?>
               <ul id="accordion-menu">
+                <li class="sidebar-section-label">Main</li>
                 <li>
                    <a href="index.php" class="dropdown-toggle no-arrow">
                     <span class="micon bi bi-calendar4-week"></span
@@ -301,6 +345,7 @@
                  <span class="mtext">School Employee <br>201 Files Uploaded</span>
                 </a>
               </li>
+              <li class="sidebar-section-label">Self Service</li>
               <li class="dropdown">
                 <a href="javascript:;" class="dropdown-toggle">
                  <span class="micon bi bi-inbox"></span>
@@ -313,6 +358,7 @@
                   <li><a href="user_ipcrf_list.php">My IPCRF</a></li>
                 </ul>
               </li>
+              <li class="sidebar-section-label">School Workflows</li>
               <li class="dropdown">
                 <a href="javascript:;" class="dropdown-toggle">
                  <span class="micon bi bi-calendar-check"></span>
@@ -324,6 +370,7 @@
                   <li><a href="school_leave_ledger.php">Leave Ledger</a></li>
                 </ul>
               </li>
+              <li class="sidebar-section-label">My Leave</li>
               <li class="dropdown">
                 <a href="javascript:;" class="dropdown-toggle">
                  <span class="micon bi bi-person-check"></span>
@@ -335,6 +382,7 @@
                   <li><a href="user_leave_balance.php">My Balance</a></li>
                 </ul>
               </li>
+              <li class="sidebar-section-label">Growth</li>
               <li class="dropdown">
                 <a href="javascript:;" class="dropdown-toggle">
                  <span class="micon bi bi-trophy"></span>
@@ -359,6 +407,7 @@
                   <li><a href="ld_my_trainings.php">My Trainings</a></li>
                 </ul>
               </li>
+              <li class="sidebar-section-label">Profile</li>
               <li>
                 <a href="profile.php" class="dropdown-toggle no-arrow">
                  <span class="micon bi bi-person"></span>
@@ -371,6 +420,8 @@
             <?php if (!$hasValidatorTasks && $_SESSION['role_id'] == 4): ?>
               <ul id="accordion-menu">
 
+
+                  <li class="sidebar-section-label">Main</li>
                   <!-- HOME -->
                   <li class="dropdown">
                       <a href="javascript:;" class="dropdown-toggle">
@@ -383,6 +434,8 @@
                       </ul>
                   </li>
 
+
+                  <li class="sidebar-section-label">Self Service</li>
                   <!-- MY SUBMISSION -->
                   <li class="dropdown">
                       <a href="javascript:;" class="dropdown-toggle">
@@ -410,6 +463,8 @@
                       </ul>
                   </li>
 
+
+                  <li class="sidebar-section-label">Growth</li>
                   <!-- REWARDS -->
                   <li class="dropdown">
                       <a href="javascript:;" class="dropdown-toggle">
@@ -436,6 +491,8 @@
                       </ul>
                   </li>
 
+
+                  <li class="sidebar-section-label">Profile</li>
                   <!-- PROFILE -->
                   <li>
                       <a href="profile.php" class="dropdown-toggle no-arrow">

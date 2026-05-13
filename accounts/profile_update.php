@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 
 require_login();
 
@@ -124,6 +125,18 @@ $values[] = $_SESSION['user_id'];
 
 $stmt = $pdo->prepare('UPDATE sdopang1_user SET ' . implode(', ', $sets) . ' WHERE user_id = ?');
 $success = $stmt->execute($values);
+
+if ($success) {
+    audit_log(
+        $pdo,
+        $_SESSION['user_id'] ?? null,
+        trim($data['first_name'] . ' ' . $data['last_name']),
+        isset($data['user_image']) && $data['user_image'] ? 'UPLOAD' : 'UPDATE',
+        'Profile',
+        $_SESSION['user_id'] ?? null,
+        isset($data['user_image']) && $data['user_image'] ? 'Updated profile and uploaded a profile photo.' : 'Updated profile details.'
+    );
+}
 
 $_SESSION['success_message'] = $success ? 'Profile updated successfully.' : 'Profile update failed.';
 header('Location: profile.php');

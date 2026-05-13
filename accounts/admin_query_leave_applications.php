@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 require_once __DIR__ . '/core/leave_helpers.php';
 
 require_login();
@@ -131,6 +132,15 @@ try {
     }
 
     $pdo->commit();
+    audit_log(
+        $pdo,
+        $_SESSION['user_id'] ?? null,
+        audit_current_fullname($pdo),
+        $action === 'approve' ? 'APPROVE' : 'REJECT',
+        'Leave Management',
+        $applicationId,
+        ($action === 'approve' ? 'Approved' : 'Rejected') . ' a leave application.'
+    );
     leave_json(['status' => 'success']);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

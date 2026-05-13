@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/core/audit.php';
 
 $error = '';
 $email = '';
@@ -17,18 +18,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify
     if ($user && ($user['status'] ?? 'active') === 'inactive') {
         $error = "Your account is inactive";
+        audit_log($pdo, $user['user_id'] ?? null, trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')), 'FAILED_LOGIN', 'Authentication', $email, 'Inactive account login attempt.');
     } elseif ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['name'] = $user['first_name'];
+        $_SESSION['fullname'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         $_SESSION['role_id'] = $user['role_id'];
 
         // Regenerate after successful login to prevent session fixation.
         session_regenerate_id(true);
 
+        audit_log($pdo, $user['user_id'], $_SESSION['fullname'], 'LOGIN', 'Authentication', $user['user_id'], 'User signed in successfully.');
+
         header("Location: /PRIMEHR/accounts/index.php");
         exit;
     } else {
         $error = "Invalid email or password";
+        audit_log($pdo, null, $email !== '' ? $email : 'Guest', 'FAILED_LOGIN', 'Authentication', $email, 'Failed login attempt.');
     }
 }
 ?>

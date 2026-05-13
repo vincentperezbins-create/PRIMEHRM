@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
+require_once __DIR__ . '/core/audit.php';
 
 require_login();
 require_validator($pdo, '201');if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -37,6 +38,16 @@ $success = $stmt->execute([$status, $remarks, $documentId]);
 if (!$success) {
     die("Update failed");
 }
+
+audit_log(
+    $pdo,
+    $_SESSION['user_id'] ?? null,
+    audit_current_fullname($pdo),
+    $status === 'Approved' ? 'APPROVE' : 'REJECT',
+    '201 Files',
+    $documentId,
+    $status === 'Approved' ? 'Approved a 201 file upload.' : 'Returned a 201 file upload.'
+);
 
 $_SESSION['success_message'] = $status === 'Approved'
     ? 'Document approved successfully.'

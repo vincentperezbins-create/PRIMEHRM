@@ -156,75 +156,317 @@ $navbarFullName = $navbarFullName !== '' ? $navbarFullName : 'User';
 $navbarRoleName = trim((string) ($role['role_name'] ?? $currentUser['role_name'] ?? 'User'));
 $navbarInitials = strtoupper(substr((string) ($currentUser['first_name'] ?? 'U'), 0, 1) . substr((string) ($currentUser['last_name'] ?? ''), 0, 1));
 $navbarImage = trim((string) ($currentUser['user_image'] ?? ''));
+
+$quickLinks = [];
+$moreLinks = [];
+if (isset($_SESSION['role_id'])) {
+    $roleId = (int) $_SESSION['role_id'];
+    if ($roleId === 1) {
+        $quickLinks = [
+            ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'icon' => 'bi bi-grid-1x2'],
+            ['label' => 'Users', 'href' => 'admin_users_list.php', 'icon' => 'bi bi-people'],
+            ['label' => 'Schools', 'href' => 'admin_school_list.php', 'icon' => 'bi bi-building'],
+            ['label' => '201 Files', 'href' => 'admin_201_tables.php', 'icon' => 'bi bi-folder-check'],
+        ];
+        $moreLinks = [
+            ['label' => 'Leave', 'href' => 'admin_leave_applications.php', 'icon' => 'bi bi-calendar-check'],
+            ['label' => 'L&D', 'href' => 'ld_dashboard.php', 'icon' => 'bi bi-mortarboard'],
+            ['label' => 'Rewards', 'href' => 'rewards_dashboard.php', 'icon' => 'bi bi-trophy'],
+            ['label' => 'Settings', 'href' => 'admin_notifications.php', 'icon' => 'bi bi-gear'],
+            ['label' => 'Audit Logs', 'href' => 'admin_audit_logs.php', 'icon' => 'bi bi-shield-check'],
+        ];
+    } elseif ($roleId === 3) {
+        $quickLinks = [
+            ['label' => 'Dashboard', 'href' => 'school_dashboard.php', 'icon' => 'bi bi-grid-1x2'],
+            ['label' => '201 Files', 'href' => 'school_201_tables.php', 'icon' => 'bi bi-folder-check'],
+            ['label' => 'Leave', 'href' => 'school_leave_applications.php', 'icon' => 'bi bi-calendar-check'],
+            ['label' => 'L&D', 'href' => 'ld_dashboard.php', 'icon' => 'bi bi-mortarboard'],
+        ];
+        $moreLinks = [
+            ['label' => 'My Trainings', 'href' => 'ld_my_trainings.php', 'icon' => 'bi bi-award'],
+            ['label' => 'Profile', 'href' => 'profile.php', 'icon' => 'bi bi-person'],
+        ];
+    } else {
+        $quickLinks = [
+            ['label' => 'Dashboard', 'href' => 'user_dashboard.php', 'icon' => 'bi bi-grid-1x2'],
+            ['label' => 'My 201', 'href' => 'user_201_tables.php', 'icon' => 'bi bi-folder-check'],
+            ['label' => 'Leave', 'href' => 'user_leave_apply.php', 'icon' => 'bi bi-calendar-plus'],
+            ['label' => 'Trainings', 'href' => 'ld_my_trainings.php', 'icon' => 'bi bi-mortarboard'],
+        ];
+        $moreLinks = [
+            ['label' => 'Certificates', 'href' => 'ld_my_trainings.php', 'icon' => 'bi bi-award'],
+            ['label' => 'Recognitions', 'href' => 'rewards_my_recognitions.php', 'icon' => 'bi bi-trophy'],
+            ['label' => 'Profile', 'href' => 'profile.php', 'icon' => 'bi bi-person'],
+        ];
+    }
+}
 ?>
+    <style>
+      .header {
+        background: rgba(255, 255, 255, .96) !important;
+        border-bottom: 1px solid #eef2f7;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+        backdrop-filter: blur(10px);
+      }
+      .prime-navbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+      .prime-navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 160px;
+        padding-right: 10px;
+        border-right: 1px solid #e5e7eb;
+      }
+      .prime-navbar-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        object-fit: contain;
+        background: #fff;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .10);
+      }
+      .prime-navbar-title {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+      }
+      .prime-navbar-title strong {
+        color: #111827;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: .01em;
+      }
+      .prime-navbar-title span {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .prime-quick-links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .prime-quick-link,
+      .prime-more-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        color: #334155;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, color .18s ease;
+      }
+      .prime-quick-link:hover,
+      .prime-more-toggle:hover {
+        color: #2563eb;
+        text-decoration: none;
+        border-color: #bfdbfe;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+        transform: translateY(-1px);
+      }
+      .prime-quick-link i,
+      .prime-more-toggle i {
+        color: #2563eb;
+        font-size: 15px;
+      }
+      .prime-more-menu .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 38px;
+        font-weight: 700;
+      }
+      .prime-more-menu .dropdown-item i {
+        color: #2563eb;
+      }
+      .prime-mobile-shortcuts {
+        display: none;
+      }
+      .prime-mobile-shortcut-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+      .prime-mobile-shortcut-toggle:hover {
+        color: #1d4ed8;
+        background: #dbeafe;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, .14);
+      }
+      .prime-mobile-shortcut-menu {
+        min-width: 230px;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, .14);
+      }
+      .prime-mobile-shortcut-menu .dropdown-header {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .prime-mobile-shortcut-menu .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 40px;
+        border-radius: 10px;
+        color: #334155;
+        font-weight: 800;
+      }
+      .prime-mobile-shortcut-menu .dropdown-item i {
+        color: #2563eb;
+        font-size: 15px;
+      }
+      .prime-mobile-shortcut-menu .dropdown-item:hover {
+        color: #2563eb;
+        background: #eff6ff;
+      }
+      .header-right {
+        gap: 6px;
+      }
+      .github-link {
+        display: none !important;
+      }
+      .navbar-user-initials {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .navbar-user-meta {
+        display: inline-flex;
+        flex-direction: column;
+        line-height: 1.15;
+      }
+      .navbar-user-meta .user-role {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      @media (max-width: 1199.98px) {
+        .prime-navbar-title,
+        .prime-quick-link span {
+          display: none;
+        }
+        .prime-navbar-brand {
+          min-width: auto;
+        }
+        .prime-quick-link {
+          width: 38px;
+          justify-content: center;
+          padding: 8px;
+        }
+      }
+      @media (max-width: 767.98px) {
+        .prime-quick-links {
+          display: none;
+        }
+        .prime-mobile-shortcuts {
+          display: block;
+        }
+        .prime-navbar-left {
+          gap: 8px;
+        }
+      }
+    </style>
     <div class="header">
-      <div class="header-left">
+      <div class="header-left prime-navbar-left">
         <div class="menu-icon bi bi-list"></div>
-        <div
-          class="search-toggle-icon bi bi-search"
-          data-toggle="header_search"
-        ></div>
-        <div class="header-search">
-          <form>
-            <div class="form-group mb-0">
-              <i class="dw dw-search2 search-icon"></i>
-              <input
-                type="text"
-                class="form-control search-input"
-                placeholder="Search Here"
-              />
-              <div class="dropdown">
-                <a
-                  class="dropdown-toggle no-arrow"
-                  href="#"
-                  role="button"
-                  data-toggle="dropdown"
-                >
-                  <i class="ion-arrow-down-c"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right">
-                  <div class="form-group row">
-                    <label class="col-sm-12 col-md-2 col-form-label"
-                      >From</label
-                    >
-                    <div class="col-sm-12 col-md-10">
-                      <input
-                        class="form-control form-control-sm form-control-line"
-                        type="text"
-                      />
-                    </div>
-                  </div>
-                  <div class="form-group row">
-                    <label class="col-sm-12 col-md-2 col-form-label">To</label>
-                    <div class="col-sm-12 col-md-10">
-                      <input
-                        class="form-control form-control-sm form-control-line"
-                        type="text"
-                      />
-                    </div>
-                  </div>
-                  <div class="form-group row">
-                    <label class="col-sm-12 col-md-2 col-form-label"
-                      >Subject</label
-                    >
-                    <div class="col-sm-12 col-md-10">
-                      <input
-                        class="form-control form-control-sm form-control-line"
-                        type="text"
-                      />
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <button class="btn btn-primary">Search</button>
-                  </div>
-                </div>
+        <a class="prime-navbar-brand" href="index.php">
+          <img class="prime-navbar-logo" src="../assets_pang1/logo.png" alt="SDO 1 Pangasinan">
+          <span class="prime-navbar-title">
+            <strong>PRIMEHR</strong>
+            <span>SDO 1 Pangasinan</span>
+          </span>
+        </a>
+        <div class="prime-quick-links">
+          <?php foreach ($quickLinks as $link): ?>
+            <a class="prime-quick-link" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8') ?>">
+              <i class="<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+              <span><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8') ?></span>
+            </a>
+          <?php endforeach; ?>
+          <?php if ($moreLinks): ?>
+            <div class="dropdown">
+              <a class="prime-more-toggle dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                <i class="bi bi-lightning-charge"></i><span>More</span>
+              </a>
+              <div class="dropdown-menu prime-more-menu">
+                <?php foreach ($moreLinks as $link): ?>
+                  <a class="dropdown-item" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8') ?>">
+                    <i class="<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+                    <?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8') ?>
+                  </a>
+                <?php endforeach; ?>
               </div>
             </div>
-          </form>
+          <?php endif; ?>
         </div>
+        <?php if ($quickLinks): ?>
+          <div class="dropdown prime-mobile-shortcuts">
+            <a class="prime-mobile-shortcut-toggle dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+              <i class="bi bi-lightning-charge"></i>
+              <span>Quick</span>
+            </a>
+            <div class="dropdown-menu prime-mobile-shortcut-menu">
+              <div class="dropdown-header">Quick Links</div>
+              <?php foreach ($quickLinks as $link): ?>
+                <a class="dropdown-item" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8') ?>">
+                  <i class="<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+                  <?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+              <?php endforeach; ?>
+              <?php if ($moreLinks): ?>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-header">More</div>
+                <?php foreach ($moreLinks as $link): ?>
+                  <a class="dropdown-item" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8') ?>">
+                    <i class="<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+                    <?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8') ?>
+                  </a>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
       </div>
       <div class="header-right">
-        <div class="dashboard-setting user-notification">
+        <!-- <div class="dashboard-setting user-notification">
           <div class="dropdown">
             <a
               class="dropdown-toggle no-arrow"
@@ -234,7 +476,7 @@ $navbarImage = trim((string) ($currentUser['user_image'] ?? ''));
               <i class="dw dw-settings2"></i>
             </a>
           </div>
-        </div>
+        </div> -->
         <div class="user-notification">
           <div class="dropdown">
             <a
@@ -319,3 +561,19 @@ $navbarImage = trim((string) ($currentUser['user_image'] ?? ''));
         </div>
       </div>
     </div>
+    <script>
+      window.auditTrack = window.auditTrack || function(actionType, moduleName, recordId, description) {
+        if (!window.fetch) return;
+        const body = new URLSearchParams();
+        body.append('action_type', actionType || '');
+        body.append('module_name', moduleName || '');
+        body.append('record_id', recordId || '');
+        body.append('description', description || '');
+        fetch('audit_track.php', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body.toString(),
+          credentials: 'same-origin'
+        }).catch(function() {});
+      };
+    </script>

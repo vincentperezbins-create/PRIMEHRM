@@ -3,6 +3,7 @@ require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/csrf.php';
 require_once __DIR__ . '/core/ld_helpers.php';
+require_once __DIR__ . '/core/audit.php';
 
 $userModel = new User($pdo);
 require_login();
@@ -47,6 +48,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         WHERE certificate_submission_id = ?
     ");
     $update->execute([$status, (int) $currentUser['user_id'], $remarks, $submissionId]);
+
+    audit_log(
+        $pdo,
+        $currentUser['user_id'] ?? null,
+        audit_current_fullname($pdo),
+        $status === 'Approved' ? 'APPROVE' : 'REJECT',
+        'L&D Certificates',
+        $submissionId,
+        $status . ' a submitted training certificate.'
+    );
 
     $_SESSION['success_message'] = 'Certificate has been ' . strtolower($status) . '.';
     header('Location: admin_ld_certificates.php');

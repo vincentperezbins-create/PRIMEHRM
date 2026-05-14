@@ -109,8 +109,8 @@ $avatarSrc = trim((string) ($profile['user_image'] ?? ''));
 $profileSuccessMessage = $_SESSION['success_message'] ?? '';
 $profileErrorMessage = $_SESSION['error_message'] ?? '';
 unset($_SESSION['success_message'], $_SESSION['error_message']);
-$profileCertificates = ld_certificate_submissions($pdo, $currentUser, null, 50);
-$profileGeneratedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50);
+$profileCertificates = ld_certificate_submissions($pdo, $currentUser, null, 50, true);
+$profileGeneratedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50, true);
 ?>
 <!DOCTYPE html>
 <html>

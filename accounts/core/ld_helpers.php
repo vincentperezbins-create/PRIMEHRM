@@ -432,13 +432,13 @@ function ld_find_training_by_title(PDO $pdo, string $title): ?array {
     return $row ?: null;
 }
 
-function ld_certificate_submissions(PDO $pdo, array $currentUser, ?string $status = null, int $limit = 200): array {
+function ld_certificate_submissions(PDO $pdo, array $currentUser, ?string $status = null, int $limit = 200, bool $personalOnly = false): array {
     ld_ensure_schema($pdo);
     $scope = ld_role_scope();
     $where = [];
     $params = [];
 
-    if ($scope === 'employee') {
+    if ($personalOnly || $scope === 'employee') {
         $where[] = 'cs.user_id = ?';
         $params[] = (int) $currentUser['user_id'];
     } elseif ($scope === 'school_head') {
@@ -700,7 +700,7 @@ function ld_generate_certificates_for_training(PDO $pdo, string $trainingMatrixC
     return ['created' => $created, 'existing' => $existing, 'total' => count($responses)];
 }
 
-function ld_generated_certificates(PDO $pdo, array $currentUser, ?string $trainingMatrixCode = null, int $limit = 200): array {
+function ld_generated_certificates(PDO $pdo, array $currentUser, ?string $trainingMatrixCode = null, int $limit = 200, bool $personalOnly = false): array {
     ld_ensure_schema($pdo);
     $scope = ld_role_scope();
     $where = ['gc.status = ?'];
@@ -711,7 +711,7 @@ function ld_generated_certificates(PDO $pdo, array $currentUser, ?string $traini
         $params[] = $trainingMatrixCode;
     }
 
-    if ($scope === 'employee') {
+    if ($personalOnly || $scope === 'employee') {
         [$identityConditions, $identityParams] = ld_current_user_identity_filters($currentUser);
         $where[] = $identityConditions ? '(' . implode(' OR ', $identityConditions) . ')' : '1=0';
         $params = array_merge($params, $identityParams);
@@ -823,7 +823,7 @@ function ld_training_app_forms(PDO $pdo, string $trainingMatrixCode): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function ld_legacy_participants(PDO $pdo, array $currentUser, ?string $trainingCode = null, int $limit = 200): array {
+function ld_legacy_participants(PDO $pdo, array $currentUser, ?string $trainingCode = null, int $limit = 200, bool $personalOnly = false): array {
     $scope = ld_role_scope();
     $where = [];
     $params = [];
@@ -831,7 +831,11 @@ function ld_legacy_participants(PDO $pdo, array $currentUser, ?string $trainingC
         $where[] = 'ai.traininguniquecode = ?';
         $params[] = $trainingCode;
     }
-    if ($scope === 'school_head') {
+    if ($personalOnly) {
+        [$identityConditions, $identityParams] = ld_current_user_identity_filters($currentUser);
+        $where[] = $identityConditions ? '(' . implode(' OR ', $identityConditions) . ')' : '1=0';
+        $params = array_merge($params, $identityParams);
+    } elseif ($scope === 'school_head') {
         $where[] = 'ai.app_infoSCHOOLID = ?';
         $params[] = (string) ($currentUser['school_id'] ?? '');
     } elseif ($scope === 'employee') {

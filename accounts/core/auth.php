@@ -12,12 +12,73 @@ function require_login() {
     }
 }
 
+function access_denied(string $redirect = '/PRIMEHR/accounts/index.php'): void {
+    if (!headers_sent()) {
+        http_response_code(403);
+    }
+
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+    if (stripos($accept, 'application/json') !== false || strtolower($requestedWith) === 'xmlhttprequest') {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode(['success' => false, 'message' => 'Access denied.']);
+        exit;
+    }
+
+    $safeRedirect = htmlspecialchars($redirect, ENT_QUOTES, 'UTF-8');
+    $redirectJson = json_encode($redirect, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Access Denied | PRIMEHR</title>
+        <script src="/PRIMEHR/accounts/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+    </head>
+    <body>
+        <script>
+            var options = {
+                icon: 'error',
+                title: 'Access Denied',
+                text: 'You do not have permission to access this page.',
+                confirmButtonText: 'Go back',
+                allowOutsideClick: false
+            };
+            var redirectUrl = <?= $redirectJson ?>;
+            var goBack = function () {
+                window.location.href = redirectUrl;
+            };
+
+            if (window.Swal && Swal.fire) {
+                Swal.fire(options).then(goBack);
+            } else if (window.swal) {
+                swal(options).then(goBack);
+            } else {
+                window.alert(options.text);
+                goBack();
+            }
+        </script>
+        <noscript>
+            Access denied. <a href="<?= $safeRedirect ?>">Go back</a>
+        </noscript>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 // allow only specific roles
 function require_role($roles = []) {
     require_login();
 
-    if (!in_array($_SESSION['role_id'], $roles)) {
-        die("Access denied");
+    $roleId = (int) ($_SESSION['role_id'] ?? 0);
+    $allowedRoles = array_map('intval', $roles);
+
+    if (!in_array($roleId, $allowedRoles, true)) {
+        access_denied();
     }
 }
 
@@ -46,13 +107,41 @@ function user_can_validate(PDO $pdo, string $area): bool {
     }
 
     $user = current_user_row($pdo);
-    return (int) ($user[$columns[$area]] ?? 0) === 1;
+    $column = $columns[$area];
+    $canValidate = (int) ($user[$column] ?? ($_SESSION[$column] ?? 0));
+    $_SESSION[$column] = $canValidate;
+
+    return $canValidate === 1;
 }
 
 function require_validator(PDO $pdo, string $area): void {
     if (!user_can_validate($pdo, $area)) {
-        die("Access denied");
+        access_denied();
     }
+}
+
+function require_any_validator(PDO $pdo): void {
+    $areas = ['201', 'opcrf', 'ipcrf', 'leave'];
+
+    foreach ($areas as $area) {
+        if (user_can_validate($pdo, $area)) {
+            return;
+        }
+    }
+
+    access_denied();
+}
+
+function user_has_any_validator_permission(PDO $pdo): bool {
+    $areas = ['201', 'opcrf', 'ipcrf', 'leave'];
+
+    foreach ($areas as $area) {
+        if (user_can_validate($pdo, $area)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function current_user($userModel) {

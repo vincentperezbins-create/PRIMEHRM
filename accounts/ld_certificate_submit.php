@@ -12,7 +12,7 @@ require_once __DIR__ . '/partials/session.php';
 ld_ensure_schema($pdo);
 $token = generateToken();
 $trainingOptions = ld_certificate_training_options($pdo);
-$submissions = ld_certificate_submissions($pdo, $currentUser, null, 100);
+$submissions = ld_certificate_submissions($pdo, $currentUser, null, 100, true);
 $successMessage = $_SESSION['success_message'] ?? '';
 $errorMessage = $_SESSION['error_message'] ?? '';
 unset($_SESSION['success_message'], $_SESSION['error_message']);

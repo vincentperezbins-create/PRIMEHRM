@@ -11,6 +11,7 @@ $officeId = $currentUser['office_id'] ?? null;
 $officeRole = $currentUser['office_role'] ?? 'Staff';
 $isAssignedUnitHead = false;
 $isLinkedSchoolHead = false;
+$isDivisionOfficeHead = false;
 
 $headOfficeStmt = $pdo->prepare("
     SELECT office_id
@@ -48,6 +49,9 @@ if ($officeId) {
             || (int) ($_SESSION['role_id'] ?? 0) === 3
             || (int) ($office['office_head'] ?? 0) === (int) $_SESSION['user_id']
         );
+    $isDivisionOfficeHead = ($office['office_category'] ?? '') === 'Division Office'
+        && (string) ($currentUser['office_role'] ?? '') === 'Head'
+        && (int) ($currentUser['office_id'] ?? 0) === (int) $officeId;
 
     $stmt = $pdo->prepare("
         SELECT *
@@ -59,7 +63,7 @@ if ($officeId) {
     $opcrfs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$canFile = $isAssignedUnitHead || $isLinkedSchoolHead;
+$canFile = $isAssignedUnitHead || $isLinkedSchoolHead || $isDivisionOfficeHead;
 ?>
 <!DOCTYPE html>
 <html>
@@ -96,7 +100,7 @@ $canFile = $isAssignedUnitHead || $isLinkedSchoolHead;
               </div>
               <div class="col-md-4 mb-2">
                 <p class="text-700 mb-1">Office Role</p>
-                <h6><?= htmlspecialchars($isAssignedUnitHead ? 'Unit Head' : ($isLinkedSchoolHead ? 'School Head' : $officeRole)) ?></h6>
+                <h6><?= htmlspecialchars($isAssignedUnitHead ? 'Unit Head' : ($isLinkedSchoolHead ? 'School Head' : ($isDivisionOfficeHead ? 'Head' : $officeRole))) ?></h6>
               </div>
               <div class="col-md-4 mb-2">
                 <p class="text-700 mb-1">Linked School</p>

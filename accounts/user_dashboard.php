@@ -6,7 +6,7 @@ require_once __DIR__ . '/partials/page_info.php';
 
 $userModel = new User($pdo);
 require_login();
-require_role([4]);
+require_role([1, 2, 3, 4, 5, 6, 7]);
 $currentUser = $userModel->getUserById($_SESSION['user_id']);
 $userId = $_SESSION['user_id'];
 $fullName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
@@ -19,6 +19,10 @@ $positionStmt = $pdo->prepare("
 ");
 $positionStmt->execute([$currentUser['position_id'] ?? null]);
 $position = $positionStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$roleStmt = $pdo->prepare("SELECT role_name FROM sdopang1_roles WHERE role_id = ? LIMIT 1");
+$roleStmt->execute([$currentUser['role_id'] ?? 0]);
+$roleName = (string) ($roleStmt->fetchColumn() ?: 'User');
 
 $progress = $userModel->get201Progress($userId);
 
@@ -154,7 +158,7 @@ $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="col-md-6 mb-3">
                   <p class="text-700 mb-1">Role</p>
-                  <h6 class="mb-0">Employee</h6>
+                  <h6 class="mb-0"><?= htmlspecialchars($roleName) ?></h6>
                 </div>
               </div>
             </div>

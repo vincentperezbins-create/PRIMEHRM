@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS employee_school_unit_assignments (
+    assignment_id INT AUTO_INCREMENT PRIMARY KEY,
+    school_id VARCHAR(50) NOT NULL,
+    employee_name VARCHAR(255) NOT NULL,
+    school_name VARCHAR(255) NOT NULL,
+    functional_division_unit_name VARCHAR(255) NOT NULL,
+    unit_head_name VARCHAR(255) NOT NULL,
+    assigned_role VARCHAR(80) NOT NULL DEFAULT 'Employee',
+    scope_type ENUM('admin','school','division_unit','office_unit') NOT NULL DEFAULT 'admin',
+    scope_school_id VARCHAR(50) NULL,
+    scope_division_unit_id INT NULL,
+    scope_office_unit_id INT NULL,
+    created_by INT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_school_id (school_id),
+    INDEX idx_scope_school_id (scope_school_id),
+    INDEX idx_scope_division_unit_id (scope_division_unit_id),
+    INDEX idx_scope_office_unit_id (scope_office_unit_id),
+    INDEX idx_employee_name (employee_name),
+    INDEX idx_unit_head_name (unit_head_name),
+    INDEX idx_assigned_role (assigned_role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

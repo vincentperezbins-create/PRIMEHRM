@@ -8,9 +8,34 @@ require_role([1, 2, 3, 4, 5, 6, 7]);
 require_once __DIR__ . '/partials/session.php';
 
 ld_ensure_schema($pdo);
-$legacy = ld_legacy_participants($pdo, $currentUser, null, 50);
-$certificates = ld_certificate_submissions($pdo, $currentUser, null, 50);
-$generatedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50);
+$legacy = ld_legacy_participants($pdo, $currentUser, null, 50, true);
+$certificates = ld_certificate_submissions($pdo, $currentUser, null, 50, true);
+$generatedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50, true);
+$uniqueLegacy = [];
+$seenFormCodes = [];
+foreach ($legacy as $row) {
+    $formCode = trim((string) ($row['traininguniquecode'] ?? ''));
+    $key = $formCode !== '' ? $formCode : 'app-' . (string) ($row['app_infoID'] ?? count($uniqueLegacy));
+    if (isset($seenFormCodes[$key])) {
+        continue;
+    }
+    $seenFormCodes[$key] = true;
+    $uniqueLegacy[] = $row;
+}
+
+$generatedByTrainingCode = [];
+$generatedByAppInfo = [];
+foreach ($generatedCertificates as $certificate) {
+    $trainingCode = trim((string) ($certificate['traininguniquecode'] ?? ''));
+    if ($trainingCode !== '' && !isset($generatedByTrainingCode[$trainingCode])) {
+        $generatedByTrainingCode[$trainingCode] = $certificate;
+    }
+
+    $appInfoId = (int) ($certificate['app_info_id'] ?? 0);
+    if ($appInfoId > 0 && !isset($generatedByAppInfo[$appInfoId])) {
+        $generatedByAppInfo[$appInfoId] = $certificate;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -40,9 +65,13 @@ $generatedCertificates = ld_generated_certificates($pdo, $currentUser, null, 50)
     </div></div>
     <div class="col-lg-12 mb-20"><div class="card-box pd-20 h-100">
       <h5 class="mb-3">Training Attendance History</h5>
-      <div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Training</th><th>Date</th><th>Form Code</th><th>Email Reference</th></tr></thead><tbody>
-        <?php foreach ($legacy as $row): ?><tr><td><?= htmlspecialchars($row['trainingmatrixTITLE'] ?: 'Legacy Training', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($row['trainingmatrixINCLUSIVEDATE'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($row['traininguniquecode'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($row['app_infoEMAIL'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td></tr><?php endforeach; ?>
-        <?php if (!$legacy): ?><tr><td colspan="4" class="text-center text-muted">No training attendance records found for your account/email.</td></tr><?php endif; ?>
+      <div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Training</th><th>Date</th><th>Form Code</th><th>Email Reference</th><th>Action</th></tr></thead><tbody>
+        <?php foreach ($uniqueLegacy as $row): ?><?php
+            $trainingCode = trim((string) ($row['traininguniquecode'] ?? ''));
+            $appInfoId = (int) ($row['app_infoID'] ?? 0);
+            $matchedCertificate = ($trainingCode !== '' && isset($generatedByTrainingCode[$trainingCode])) ? $generatedByTrainingCode[$trainingCode] : ($generatedByAppInfo[$appInfoId] ?? null);
+        ?><tr><td><?= htmlspecialchars($row['trainingmatrixTITLE'] ?: 'Legacy Training', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($row['trainingmatrixINCLUSIVEDATE'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($trainingCode, ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($row['app_infoEMAIL'] ?: '-', ENT_QUOTES, 'UTF-8') ?></td><td><?php if ($matchedCertificate): ?><a class="btn btn-sm btn-outline-primary" href="ld_certificate_view.php?id=<?= (int) $matchedCertificate['generated_certificate_id'] ?>" target="_blank">View Certificate</a><?php if (!empty($matchedCertificate['pdf_path'])): ?> <a class="btn btn-sm btn-primary" href="<?= htmlspecialchars($matchedCertificate['pdf_path'], ENT_QUOTES, 'UTF-8') ?>" target="_blank">PDF</a><?php endif; ?><?php else: ?><span class="text-muted">No certificate yet</span><?php endif; ?></td></tr><?php endforeach; ?>
+        <?php if (!$uniqueLegacy): ?><tr><td colspan="5" class="text-center text-muted">No training attendance records found for your account/email.</td></tr><?php endif; ?>
       </tbody></table></div>
     </div></div>
   </div>

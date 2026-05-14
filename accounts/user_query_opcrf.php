@@ -12,6 +12,7 @@ $officeId = $currentUser['office_id'] ?? null;
 $officeRole = $currentUser['office_role'] ?? 'Staff';
 $isAssignedUnitHead = false;
 $isLinkedSchoolHead = false;
+$isDivisionOfficeHead = false;
 
 $headOfficeStmt = $pdo->prepare("
     SELECT office_id
@@ -48,11 +49,14 @@ if ($officeId) {
                 || (int) ($_SESSION['role_id'] ?? 0) === 3
                 || (int) ($office['office_head'] ?? 0) === (int) $_SESSION['user_id']
             );
+        $isDivisionOfficeHead = ($office['office_category'] ?? '') === 'Division Office'
+            && (string) ($currentUser['office_role'] ?? '') === 'Head'
+            && (int) ($currentUser['office_id'] ?? 0) === (int) $officeId;
     }
 }
 
-if (!$officeId || (!$isAssignedUnitHead && !$isLinkedSchoolHead)) {
-    opcrf_json(['status' => 'error', 'message' => 'Only the assigned unit head or linked school head can file this office/unit OPCRF'], 403);
+if (!$officeId || (!$isAssignedUnitHead && !$isLinkedSchoolHead && !$isDivisionOfficeHead)) {
+    opcrf_json(['status' => 'error', 'message' => 'Only the assigned unit head, linked school head, or division office head can file this office/unit OPCRF'], 403);
 }
 
 try {

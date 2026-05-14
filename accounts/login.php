@@ -24,6 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['name'] = $user['first_name'];
         $_SESSION['fullname'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         $_SESSION['role_id'] = $user['role_id'];
+        $_SESSION['can_validate_201'] = (int) ($user['can_validate_201'] ?? 0);
+        $_SESSION['can_validate_opcrf'] = (int) ($user['can_validate_opcrf'] ?? 0);
+        $_SESSION['can_validate_ipcrf'] = (int) ($user['can_validate_ipcrf'] ?? 0);
+        $_SESSION['can_validate_leave'] = (int) ($user['can_validate_leave'] ?? 0);
 
         // Regenerate after successful login to prevent session fixation.
         session_regenerate_id(true);

@@ -28,6 +28,15 @@ $employeeCountStmt = $pdo->prepare("
 $employeeCountStmt->execute([$schoolId]);
 $totalEmployees = (int) $employeeCountStmt->fetchColumn();
 
+$unitHeadCountStmt = $pdo->prepare("
+    SELECT COUNT(*)
+    FROM sdopang1_user
+    WHERE school_id = ?
+      AND role_id = 3
+");
+$unitHeadCountStmt->execute([$schoolId]);
+$totalUnitHeads = (int) $unitHeadCountStmt->fetchColumn();
+
 $documentCountStmt = $pdo->prepare("
     SELECT COUNT(*)
     FROM sdopang1_documents d
@@ -73,6 +82,38 @@ $leavePending = $countLeaveStatus('pending');
 $leaveApproved = $countLeaveStatus('approved');
 $leaveRejected = $countLeaveStatus('rejected');
 
+$ipcrfCountStmt = $pdo->prepare("
+    SELECT COUNT(*)
+    FROM sdopang1_ipcrf i
+    JOIN sdopang1_user u ON u.user_id = i.user_id
+    WHERE u.school_id = ?
+");
+$ipcrfCountStmt->execute([$schoolId]);
+$totalIpcrf = (int) $ipcrfCountStmt->fetchColumn();
+
+$opcrfCountStmt = $pdo->prepare("
+    SELECT COUNT(*)
+    FROM sdopang1_opcrf o
+    JOIN sdopang1_user u ON u.user_id = o.created_by
+    WHERE u.school_id = ?
+");
+$opcrfCountStmt->execute([$schoolId]);
+$totalOpcrf = (int) $opcrfCountStmt->fetchColumn();
+
+$attendanceTables = ['attendance', 'employee_attendance', 'sdopang1_attendance', 'daily_time_records', 'dtr', 'time_logs'];
+$attendanceTable = null;
+foreach ($attendanceTables as $candidateTable) {
+    $tableStmt = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($candidateTable));
+    if ($tableStmt->fetchColumn()) {
+        $attendanceTable = $candidateTable;
+        break;
+    }
+}
+$attendanceCount = 0;
+if ($attendanceTable !== null) {
+    $attendanceCount = (int) $pdo->query("SELECT COUNT(*) FROM `$attendanceTable`")->fetchColumn();
+}
+
 $recentDocumentsStmt = $pdo->prepare("
     SELECT d.document_id, d.status, d.remarks, d.uploaded_at, u.first_name, u.last_name, t.doc_name
     FROM sdopang1_documents d
@@ -98,6 +139,25 @@ $recentLeaveStmt = $pdo->prepare("
 ");
 $recentLeaveStmt->execute([$schoolId]);
 $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$recentEmployeesStmt = $pdo->prepare("
+    SELECT user_id, first_name, middle_name, last_name, employeeID, email
+    FROM sdopang1_user
+    WHERE school_id = ?
+      AND role_id = 4
+    ORDER BY user_id DESC
+    LIMIT 6
+");
+$recentEmployeesStmt->execute([$schoolId]);
+$recentEmployees = $recentEmployeesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$schoolActions = [
+    ['School Employees', 'View and manage school employee accounts.', 'admin_employee_school_units.php', 'bi bi-people'],
+    ['Unit Heads', 'Review school head and unit lead account assignments.', 'admin_employee_school_units.php', 'bi bi-person-badge'],
+    ['Attendance', $attendanceTable ? 'Open attendance monitoring records.' : 'Attendance module/table is not yet configured.', 'school_dashboard.php', 'bi bi-clock-history'],
+    ['IPCRF / OPCRF', 'Open performance form monitoring and submissions.', 'user_ipcrf_list.php', 'bi bi-clipboard-data'],
+    ['Reports', 'Open school 201, leave, and ledger reports.', 'school_leave_ledger.php', 'bi bi-file-earmark-bar-graph'],
+];
 ?>
 <!DOCTYPE html>
 <html>
@@ -136,6 +196,7 @@ $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
           <?php
           $cards = [
               ['Employees', $totalEmployees, 'primary', 'bi bi-people'],
+              ['Unit Heads', $totalUnitHeads, 'info', 'bi bi-person-badge'],
               ['201 Files', $totalDocuments, 'secondary', 'bi bi-folder-check'],
               ['Pending 201', $pendingDocuments, 'warning', 'bi bi-hourglass-split'],
               ['Approved 201', $approvedDocuments, 'success', 'bi bi-check2-circle'],
@@ -143,6 +204,9 @@ $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
               ['Pending Leave', $leavePending, 'warning', 'bi bi-calendar-event'],
               ['Approved Leave', $leaveApproved, 'success', 'bi bi-calendar-check'],
               ['Rejected Leave', $leaveRejected, 'danger', 'bi bi-calendar-x'],
+              ['Attendance', $attendanceCount, $attendanceTable ? 'primary' : 'secondary', 'bi bi-clock-history'],
+              ['IPCRF', $totalIpcrf, 'primary', 'bi bi-clipboard-data'],
+              ['OPCRF', $totalOpcrf, 'primary', 'bi bi-building-check'],
           ];
           foreach ($cards as $card):
           ?>
@@ -163,7 +227,57 @@ $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <div class="row pb-10">
-          <div class="col-md-6 mb-20">
+          <?php foreach ($schoolActions as $action): ?>
+            <div class="col-xl-2 col-lg-4 col-md-6 mb-20">
+              <a href="<?= htmlspecialchars($action[2], ENT_QUOTES, 'UTF-8') ?>" class="card-box d-block height-100-p pd-20 text-decoration-none">
+                <div class="d-flex align-items-start">
+                  <div class="mr-3">
+                    <span class="<?= htmlspecialchars($action[3], ENT_QUOTES, 'UTF-8') ?>" style="font-size: 28px;"></span>
+                  </div>
+                  <div>
+                    <h6 class="mb-1 text-dark"><?= htmlspecialchars($action[0]) ?></h6>
+                    <p class="mb-0 text-700"><?= htmlspecialchars($action[1]) ?></p>
+                  </div>
+                </div>
+              </a>
+            </div>
+          <?php endforeach; ?>
+        </div>
+
+        <div class="row pb-10">
+          <div class="col-md-4 mb-20">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="mb-0">Recent Employees</h5>
+                  <a href="admin_employee_school_units.php" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table fs--1 mb-0">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($recentEmployees as $employee): ?>
+                        <tr>
+                          <td><?= htmlspecialchars(trim($employee['first_name'] . ' ' . ($employee['middle_name'] ? $employee['middle_name'] . ' ' : '') . $employee['last_name'])) ?></td>
+                          <td><?= htmlspecialchars((string) ($employee['employeeID'] ?: $employee['user_id'])) ?></td>
+                        </tr>
+                      <?php endforeach; ?>
+                      <?php if (!$recentEmployees): ?>
+                        <tr><td colspan="2" class="text-center text-700">No school employees yet.</td></tr>
+                      <?php endif; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4 mb-20">
             <div class="card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -199,7 +313,7 @@ $recentLeaves = $recentLeaveStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
           </div>
 
-          <div class="col-md-6 mb-20">
+          <div class="col-md-4 mb-20">
             <div class="card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">

@@ -120,6 +120,167 @@ function require_validator(PDO $pdo, string $area): void {
     }
 }
 
+function user_can_validate_division_opcrf(PDO $pdo): bool {
+    require_login();
+
+    if ((int) ($_SESSION['role_id'] ?? 0) === 1) {
+        return true;
+    }
+
+    if ((int) ($_SESSION['role_id'] ?? 0) === 3 || !user_can_validate($pdo, 'opcrf')) {
+        return false;
+    }
+
+    $user = current_user_row($pdo);
+    $divisionUnit = strtolower(trim((string) ($user['division_unit'] ?? '')));
+
+    return (int) ($user['division_unit_id'] ?? 0) > 0
+        || (int) ($user['office_unit_id'] ?? 0) > 0
+        || ($divisionUnit !== '' && $divisionUnit !== 'school');
+}
+
+function require_division_opcrf_validator(PDO $pdo): void {
+    if (!user_can_validate_division_opcrf($pdo)) {
+        access_denied();
+    }
+}
+
+function user_ipcrf_validation_scope(PDO $pdo): string {
+    require_login();
+
+    if ((int) ($_SESSION['role_id'] ?? 0) === 1) {
+        return 'all';
+    }
+
+    if (!user_can_validate($pdo, 'ipcrf')) {
+        return 'none';
+    }
+
+    $user = current_user_row($pdo);
+    $divisionUnit = strtolower(trim((string) ($user['division_unit'] ?? '')));
+    $hasDivisionScope = (int) ($user['division_unit_id'] ?? 0) > 0
+        || (int) ($user['office_unit_id'] ?? 0) > 0
+        || ($divisionUnit !== '' && $divisionUnit !== 'school');
+
+    if ((int) ($_SESSION['role_id'] ?? 0) !== 3 && $hasDivisionScope) {
+        return 'all';
+    }
+
+    return trim((string) ($user['school_id'] ?? '')) !== '' ? 'school' : 'none';
+}
+
+function require_ipcrf_validator(PDO $pdo): void {
+    if (user_ipcrf_validation_scope($pdo) === 'none') {
+        access_denied();
+    }
+}
+
+function user_can_validate_ipcrf_record(PDO $pdo, int $ipcrfId): bool {
+    $scope = user_ipcrf_validation_scope($pdo);
+
+    if ($scope === 'all') {
+        return true;
+    }
+
+    if ($scope !== 'school') {
+        return false;
+    }
+
+    $user = current_user_row($pdo);
+    $stmt = $pdo->prepare("
+        SELECT u.school_id
+        FROM sdopang1_ipcrf i
+        JOIN sdopang1_user u ON u.user_id = i.user_id
+        WHERE i.ipcrf_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$ipcrfId]);
+
+    return (string) $stmt->fetchColumn() === (string) ($user['school_id'] ?? '');
+}
+
+function user_has_division_validation_scope(array $user): bool {
+    $divisionUnit = strtolower(trim((string) ($user['division_unit'] ?? '')));
+
+    return (int) ($user['division_unit_id'] ?? 0) > 0
+        || (int) ($user['office_unit_id'] ?? 0) > 0
+        || ($divisionUnit !== '' && $divisionUnit !== 'school');
+}
+
+function user_area_validation_scope(PDO $pdo, string $area): string {
+    require_login();
+
+    if ((int) ($_SESSION['role_id'] ?? 0) === 1) {
+        return 'all';
+    }
+
+    if (!user_can_validate($pdo, $area)) {
+        return 'none';
+    }
+
+    $user = current_user_row($pdo);
+
+    if ((int) ($_SESSION['role_id'] ?? 0) !== 3 && user_has_division_validation_scope($user)) {
+        return 'all';
+    }
+
+    return trim((string) ($user['school_id'] ?? '')) !== '' ? 'school' : 'none';
+}
+
+function require_scoped_validator(PDO $pdo, string $area): void {
+    if (user_area_validation_scope($pdo, $area) === 'none') {
+        access_denied();
+    }
+}
+
+function user_can_validate_leave_application(PDO $pdo, int $applicationId): bool {
+    $scope = user_area_validation_scope($pdo, 'leave');
+
+    if ($scope === 'all') {
+        return true;
+    }
+
+    if ($scope !== 'school') {
+        return false;
+    }
+
+    $user = current_user_row($pdo);
+    $stmt = $pdo->prepare("
+        SELECT u.school_id
+        FROM leave_applications la
+        JOIN sdopang1_user u ON u.user_id = la.user_id
+        WHERE la.application_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$applicationId]);
+
+    return (string) $stmt->fetchColumn() === (string) ($user['school_id'] ?? '');
+}
+
+function user_can_validate_201_document(PDO $pdo, int $documentId): bool {
+    $scope = user_area_validation_scope($pdo, '201');
+
+    if ($scope === 'all') {
+        return true;
+    }
+
+    if ($scope !== 'school') {
+        return false;
+    }
+
+    $user = current_user_row($pdo);
+    $stmt = $pdo->prepare("
+        SELECT u.school_id
+        FROM sdopang1_documents d
+        JOIN sdopang1_user u ON u.user_id = d.user_id
+        WHERE d.document_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$documentId]);
+
+    return (string) $stmt->fetchColumn() === (string) ($user['school_id'] ?? '');
+}
+
 function require_any_validator(PDO $pdo): void {
     $areas = ['201', 'opcrf', 'ipcrf', 'leave'];
 

@@ -4,10 +4,15 @@ require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/opcrf_helpers.php';
 
 require_login();
-require_validator($pdo, 'opcrf');$action = $_POST['action'] ?? '';
+require_division_opcrf_validator($pdo);
+$action = $_POST['action'] ?? '';
 
 try {
     if ($action === 'add') {
+        if ((int) ($_SESSION['role_id'] ?? 0) !== 1) {
+            opcrf_json(['status' => 'error', 'message' => 'Only admin can create OPCRF records from the validator module'], 403);
+        }
+
         $officeId = filter_input(INPUT_POST, 'office_id', FILTER_VALIDATE_INT);
         $title = trim($_POST['title'] ?? '');
         $schoolYear = trim($_POST['school_year'] ?? '');

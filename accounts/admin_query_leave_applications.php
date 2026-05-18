@@ -6,7 +6,8 @@ require_once __DIR__ . '/core/audit.php';
 require_once __DIR__ . '/core/leave_helpers.php';
 
 require_login();
-require_validator($pdo, 'leave');if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+require_scoped_validator($pdo, 'leave');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     leave_json(['status' => 'error', 'message' => 'Invalid request'], 405);
 }
 
@@ -45,6 +46,10 @@ try {
 
     if (!$application) {
         throw new RuntimeException('Leave application not found');
+    }
+
+    if (!user_can_validate_leave_application($pdo, $applicationId)) {
+        throw new RuntimeException('You can only validate leave applications within your assigned scope.');
     }
 
     if (($application['status'] ?? '') !== 'pending') {

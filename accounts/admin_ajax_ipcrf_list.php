@@ -3,11 +3,19 @@ require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 
 require_login();
-require_validator($pdo, 'ipcrf');header('Content-Type: application/json');
+require_ipcrf_validator($pdo);
+header('Content-Type: application/json');
 
 $where = [];
 $params = [];
 $status = $_GET['status'] ?? '';
+$scope = user_ipcrf_validation_scope($pdo);
+
+if ($scope === 'school') {
+    $user = current_user_row($pdo);
+    $where[] = 'u.school_id = ?';
+    $params[] = (string) ($user['school_id'] ?? '');
+}
 
 if (in_array($status, ['Draft','For Review','Reviewed','Approved','Returned'], true)) {
     $where[] = 'i.status = ?';

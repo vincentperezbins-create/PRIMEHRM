@@ -7,7 +7,7 @@ $userModel = new User($pdo);
 require_login();
 
 $canValidate201 = user_can_validate($pdo, '201');
-$canValidateOpcrf = user_can_validate($pdo, 'opcrf');
+$canValidateOpcrf = user_can_validate_division_opcrf($pdo);
 $canValidateIpcrf = user_can_validate($pdo, 'ipcrf');
 $canValidateLeave = user_can_validate($pdo, 'leave');
 $hasValidatorTasks = $canValidate201 || $canValidateOpcrf || $canValidateIpcrf || $canValidateLeave;
@@ -33,6 +33,22 @@ function dashboard_recent(PDO $pdo, string $sql, array $params = []): array {
 $taskDashboards = [];
 
 if ($canValidate201) {
+    $scope201 = user_area_validation_scope($pdo, '201');
+    $join201 = '';
+    $where201 = '';
+    $params201 = [];
+    $recentWhere201 = '';
+    $recentParams201 = [];
+
+    if ($scope201 === 'school') {
+        $currentValidator = current_user_row($pdo);
+        $join201 = ' JOIN sdopang1_user u ON u.user_id = d.user_id';
+        $where201 = ' WHERE u.school_id = ?';
+        $params201 = [(string) ($currentValidator['school_id'] ?? '')];
+        $recentWhere201 = ' WHERE u.school_id = ?';
+        $recentParams201 = $params201;
+    }
+
     $taskDashboards[] = [
         'key' => '201',
         'title' => '201 Files Validator Dashboard',
@@ -41,10 +57,10 @@ if ($canValidate201) {
         'button' => 'Open 201 Files',
         'icon' => 'bi bi-folder-check',
         'cards' => [
-            ['Total Files', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents'), 'primary'],
-            ['Pending', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents WHERE status = ?', ['Pending']), 'warning'],
-            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents WHERE status = ?', ['Approved']), 'success'],
-            ['Returned', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents WHERE status = ?', ['Returned']), 'danger'],
+            ['Total Files', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents d' . $join201 . $where201, $params201), 'primary'],
+            ['Pending', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents d' . $join201 . ($where201 ? $where201 . ' AND d.status = ?' : ' WHERE d.status = ?'), array_merge($params201, ['Pending'])), 'warning'],
+            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents d' . $join201 . ($where201 ? $where201 . ' AND d.status = ?' : ' WHERE d.status = ?'), array_merge($params201, ['Approved'])), 'success'],
+            ['Returned', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_documents d' . $join201 . ($where201 ? $where201 . ' AND d.status = ?' : ' WHERE d.status = ?'), array_merge($params201, ['Returned'])), 'danger'],
         ],
         'recent_title' => 'Recent 201 Uploads',
         'recent' => dashboard_recent($pdo, "
@@ -56,9 +72,10 @@ if ($canValidate201) {
             FROM sdopang1_documents d
             JOIN sdopang1_user u ON u.user_id = d.user_id
             JOIN sdopang1_document_types t ON t.doc_type_id = d.doc_type_id
+            " . $recentWhere201 . "
             ORDER BY d.uploaded_at DESC, d.document_id DESC
             LIMIT 6
-        "),
+        ", $recentParams201),
     ];
 }
 
@@ -92,6 +109,22 @@ if ($canValidateOpcrf) {
 }
 
 if ($canValidateIpcrf) {
+    $ipcrfScope = user_ipcrf_validation_scope($pdo);
+    $ipcrfCountJoin = '';
+    $ipcrfCountWhere = '';
+    $ipcrfCountParams = [];
+    $ipcrfRecentWhere = '';
+    $ipcrfRecentParams = [];
+
+    if ($ipcrfScope === 'school') {
+        $currentValidator = current_user_row($pdo);
+        $ipcrfCountJoin = ' JOIN sdopang1_user u ON u.user_id = i.user_id';
+        $ipcrfCountWhere = ' WHERE u.school_id = ?';
+        $ipcrfCountParams = [(string) ($currentValidator['school_id'] ?? '')];
+        $ipcrfRecentWhere = ' WHERE u.school_id = ?';
+        $ipcrfRecentParams = $ipcrfCountParams;
+    }
+
     $taskDashboards[] = [
         'key' => 'ipcrf',
         'title' => 'IPCRF Validator Dashboard',
@@ -100,10 +133,10 @@ if ($canValidateIpcrf) {
         'button' => 'Open IPCRF',
         'icon' => 'bi bi-clipboard-data',
         'cards' => [
-            ['Total IPCRF', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf'), 'primary'],
-            ['For Review', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf WHERE status = ?', ['For Review']), 'warning'],
-            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf WHERE status = ?', ['Approved']), 'success'],
-            ['Returned', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf WHERE status = ?', ['Returned']), 'danger'],
+            ['Total IPCRF', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf i' . $ipcrfCountJoin . $ipcrfCountWhere, $ipcrfCountParams), 'primary'],
+            ['For Review', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf i' . $ipcrfCountJoin . ($ipcrfCountWhere ? $ipcrfCountWhere . ' AND i.status = ?' : ' WHERE i.status = ?'), array_merge($ipcrfCountParams, ['For Review'])), 'warning'],
+            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf i' . $ipcrfCountJoin . ($ipcrfCountWhere ? $ipcrfCountWhere . ' AND i.status = ?' : ' WHERE i.status = ?'), array_merge($ipcrfCountParams, ['Approved'])), 'success'],
+            ['Returned', dashboard_count($pdo, 'SELECT COUNT(*) FROM sdopang1_ipcrf i' . $ipcrfCountJoin . ($ipcrfCountWhere ? $ipcrfCountWhere . ' AND i.status = ?' : ' WHERE i.status = ?'), array_merge($ipcrfCountParams, ['Returned'])), 'danger'],
         ],
         'recent_title' => 'Recent IPCRF Submissions',
         'recent' => dashboard_recent($pdo, "
@@ -114,13 +147,30 @@ if ($canValidateIpcrf) {
                    TRIM(CONCAT(u.first_name, ' ', COALESCE(NULLIF(u.middle_name, ''), ''), IF(u.middle_name IS NULL OR u.middle_name = '', '', ' '), u.last_name)) AS sub_text
             FROM sdopang1_ipcrf i
             LEFT JOIN sdopang1_user u ON u.user_id = i.user_id
+            " . $ipcrfRecentWhere . "
             ORDER BY i.updated_at DESC, i.created_at DESC, i.ipcrf_id DESC
             LIMIT 6
-        "),
+        ", $ipcrfRecentParams),
     ];
 }
 
 if ($canValidateLeave) {
+    $leaveScope = user_area_validation_scope($pdo, 'leave');
+    $leaveJoin = '';
+    $leaveWhere = '';
+    $leaveParams = [];
+    $leaveRecentWhere = '';
+    $leaveRecentParams = [];
+
+    if ($leaveScope === 'school') {
+        $currentValidator = current_user_row($pdo);
+        $leaveJoin = ' JOIN sdopang1_user u ON u.user_id = la.user_id';
+        $leaveWhere = ' WHERE u.school_id = ?';
+        $leaveParams = [(string) ($currentValidator['school_id'] ?? '')];
+        $leaveRecentWhere = ' WHERE u.school_id = ?';
+        $leaveRecentParams = $leaveParams;
+    }
+
     $taskDashboards[] = [
         'key' => 'leave',
         'title' => 'Leave Validator Dashboard',
@@ -129,10 +179,10 @@ if ($canValidateLeave) {
         'button' => 'Open Leave Applications',
         'icon' => 'bi bi-calendar-check',
         'cards' => [
-            ['Total Leave', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications'), 'primary'],
-            ['Pending', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications WHERE status = ?', ['pending']), 'warning'],
-            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications WHERE status = ?', ['approved']), 'success'],
-            ['Rejected', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications WHERE status = ?', ['rejected']), 'danger'],
+            ['Total Leave', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications la' . $leaveJoin . $leaveWhere, $leaveParams), 'primary'],
+            ['Pending', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications la' . $leaveJoin . ($leaveWhere ? $leaveWhere . ' AND la.status = ?' : ' WHERE la.status = ?'), array_merge($leaveParams, ['pending'])), 'warning'],
+            ['Approved', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications la' . $leaveJoin . ($leaveWhere ? $leaveWhere . ' AND la.status = ?' : ' WHERE la.status = ?'), array_merge($leaveParams, ['approved'])), 'success'],
+            ['Rejected', dashboard_count($pdo, 'SELECT COUNT(*) FROM leave_applications la' . $leaveJoin . ($leaveWhere ? $leaveWhere . ' AND la.status = ?' : ' WHERE la.status = ?'), array_merge($leaveParams, ['rejected'])), 'danger'],
         ],
         'recent_title' => 'Recent Leave Applications',
         'recent' => dashboard_recent($pdo, "
@@ -144,9 +194,10 @@ if ($canValidateLeave) {
             FROM leave_applications la
             JOIN sdopang1_user u ON u.user_id = la.user_id
             JOIN leave_types lt ON lt.leave_type_id = la.leave_type_id
+            " . $leaveRecentWhere . "
             ORDER BY la.created_at DESC
             LIMIT 6
-        "),
+        ", $leaveRecentParams),
     ];
 }
 ?>

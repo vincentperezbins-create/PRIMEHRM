@@ -5,7 +5,8 @@ require_once __DIR__ . '/core/csrf.php';
 require_once __DIR__ . '/core/audit.php';
 
 require_login();
-require_validator($pdo, '201');if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+require_scoped_validator($pdo, '201');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die("Invalid request");
 }
 
@@ -23,6 +24,10 @@ if (!$documentId || !in_array($action, ['approve', 'return'], true)) {
 
 if ($action === 'return' && $remarks === '') {
     die("Remarks are required when returning a document");
+}
+
+if (!user_can_validate_201_document($pdo, $documentId)) {
+    die("You can only validate 201 files within your assigned scope.");
 }
 
 $status = $action === 'approve' ? 'Approved' : 'Returned';

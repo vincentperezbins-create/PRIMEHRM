@@ -4,7 +4,7 @@ require_once __DIR__ . '/core/auth.php';
 
 $userModel = new User($pdo);
 require_login();
-require_validator($pdo, 'ipcrf');
+require_ipcrf_validator($pdo);
 require_once __DIR__ . '/partials/session.php';
 
 $ipcrfId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -32,6 +32,10 @@ $ipcrf = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$ipcrf) {
     die('IPCRF not found');
+}
+
+if (!user_can_validate_ipcrf_record($pdo, $ipcrfId)) {
+    access_denied('admin_ipcrf_list.php');
 }
 ?>
 <!DOCTYPE html>

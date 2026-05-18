@@ -4,9 +4,10 @@ require_once __DIR__ . '/core/auth.php';
 
 $userModel = new User($pdo);
 require_login();
-require_validator($pdo, 'opcrf');
+require_division_opcrf_validator($pdo);
 require_once __DIR__ . '/partials/session.php';
 
+$isAdmin = (int) ($_SESSION['role_id'] ?? 0) === 1;
 $total = (int) $pdo->query("SELECT COUNT(*) FROM sdopang1_opcrf")->fetchColumn();
 $offices = $pdo->query("SELECT office_id, office_name FROM sdopang1_offices WHERE status='Active' ORDER BY office_name")->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -25,9 +26,11 @@ $offices = $pdo->query("SELECT office_id, office_name FROM sdopang1_offices WHER
     <div class="d-flex justify-content-between pb-20">
         <div>
             <h2>Office/Unit OPCRF (<?= htmlspecialchars((string) $total) ?>)</h2>
-            <p class="text-700 mb-0">Create, monitor, review, and approve office-level OPCRF for SGOD, CID, SMME, HR, School Heads, and District Supervisors.</p>
+            <p class="text-700 mb-0">Monitor, review, and approve office-level OPCRF for division functional units and schools.</p>
         </div>
-        <button class="btn btn-primary openModal" data-action="Add">Add Office/Unit OPCRF</button>
+        <?php if ($isAdmin): ?>
+            <button class="btn btn-primary openModal" data-action="Add">Add Office/Unit OPCRF</button>
+        <?php endif; ?>
     </div>
 
     <div class="card-box pd-20">

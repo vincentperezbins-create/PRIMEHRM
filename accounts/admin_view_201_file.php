@@ -5,7 +5,7 @@ require_once __DIR__ . '/core/csrf.php';
 
 $userModel = new User($pdo);
 require_login();
-require_validator($pdo, '201');
+require_scoped_validator($pdo, '201');
 require_once __DIR__ . '/partials/session.php';
 
 $documentId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -25,6 +25,10 @@ $file = $stmt->fetch();
 
 if (!$file) {
     die("Document not found");
+}
+
+if (!user_can_validate_201_document($pdo, $documentId)) {
+    access_denied('admin_201_tables.php');
 }
 
 $filePath = $file['file_path'];

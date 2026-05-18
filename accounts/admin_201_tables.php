@@ -4,16 +4,49 @@ require_once __DIR__ . '/core/auth.php';
 $userModel = new User($pdo);
 require_login();
 require_once __DIR__ . '/partials/session.php';
-require_validator($pdo, '201');
+require_scoped_validator($pdo, '201');
 ?>
 <?php
-                    // count admins
-                    $total201 = $db->count("sdopang1_documents");
-$total201Pending = $db->count("sdopang1_documents", "status = 'Pending'");
-$total201Approved = $db->count("sdopang1_documents", "status = 'Approved'");
-$total201Returned = $db->count("sdopang1_documents", "status = 'Returned'");
+$validationScope = user_area_validation_scope($pdo, '201');
+$scopeWhere = [];
+$scopeParams = [];
 
-$users = $pdo->query("
+if ($validationScope === 'school') {
+    $scopeWhere[] = 'u.school_id = ?';
+    $scopeParams[] = (string) ($currentUser['school_id'] ?? '');
+}
+
+$count201 = function (?string $status = null) use ($pdo, $scopeWhere, $scopeParams): int {
+    $where = $scopeWhere;
+    $params = $scopeParams;
+
+    if ($status !== null) {
+        $where[] = 'd.status = ?';
+        $params[] = $status;
+    }
+
+    $sql = "
+        SELECT COUNT(*)
+        FROM sdopang1_documents d
+        JOIN sdopang1_user u ON u.user_id = d.user_id
+    ";
+
+    if ($where) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    return (int) $stmt->fetchColumn();
+};
+
+$total201 = $count201();
+$total201Pending = $count201('Pending');
+$total201Approved = $count201('Approved');
+$total201Returned = $count201('Returned');
+
+$userSql = "
     SELECT DISTINCT
         u.user_id,
         u.first_name,
@@ -22,33 +55,62 @@ $users = $pdo->query("
         u.employeeID
     FROM sdopang1_documents d
     JOIN sdopang1_user u ON u.user_id = d.user_id
-    ORDER BY u.last_name, u.first_name, u.middle_name
-")->fetchAll(PDO::FETCH_ASSOC);
+";
 
-$schools = $pdo->query("
+if ($scopeWhere) {
+    $userSql .= ' WHERE ' . implode(' AND ', $scopeWhere);
+}
+
+$userSql .= ' ORDER BY u.last_name, u.first_name, u.middle_name';
+$userStmt = $pdo->prepare($userSql);
+$userStmt->execute($scopeParams);
+$users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$schoolSql = "
     SELECT DISTINCT s.schoolID, s.schoolname
     FROM sdopang1_documents d
     JOIN sdopang1_user u ON u.user_id = d.user_id
     JOIN sdopang1schoollist s ON s.schoolID = u.school_id
-    ORDER BY s.schoolname
-")->fetchAll(PDO::FETCH_ASSOC);
+";
 
-$divisionUnits = $pdo->query("
+if ($scopeWhere) {
+    $schoolSql .= ' WHERE ' . implode(' AND ', $scopeWhere);
+}
+
+$schoolSql .= ' ORDER BY s.schoolname';
+$schoolStmt = $pdo->prepare($schoolSql);
+$schoolStmt->execute($scopeParams);
+$schools = $schoolStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$divisionSql = "
     SELECT DISTINCT du.division_unit_id, du.unit_name
     FROM sdopang1_documents d
     JOIN sdopang1_user u ON u.user_id = d.user_id
     JOIN division_units du ON du.division_unit_id = u.division_unit_id
-    ORDER BY du.sort_order, du.unit_name
-")->fetchAll(PDO::FETCH_ASSOC);
+";
 
-$months = $pdo->query("
-    SELECT DISTINCT DATE_FORMAT(uploaded_at, '%Y-%m') AS month_key
-    FROM sdopang1_documents
-    WHERE uploaded_at IS NOT NULL
+if ($scopeWhere) {
+    $divisionSql .= ' WHERE ' . implode(' AND ', $scopeWhere);
+}
+
+$divisionSql .= ' ORDER BY du.sort_order, du.unit_name';
+$divisionStmt = $pdo->prepare($divisionSql);
+$divisionStmt->execute($scopeParams);
+$divisionUnits = $divisionStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$monthWhere = array_merge(['d.uploaded_at IS NOT NULL'], $scopeWhere);
+$monthSql = "
+    SELECT DISTINCT DATE_FORMAT(d.uploaded_at, '%Y-%m') AS month_key
+    FROM sdopang1_documents d
+    JOIN sdopang1_user u ON u.user_id = d.user_id
+    WHERE " . implode(' AND ', $monthWhere) . "
     ORDER BY month_key DESC
-")->fetchAll(PDO::FETCH_COLUMN);
+";
+$monthStmt = $pdo->prepare($monthSql);
+$monthStmt->execute($scopeParams);
+$months = $monthStmt->fetchAll(PDO::FETCH_COLUMN);
 
-$documents = $pdo->query("
+$documentSql = "
     SELECT
         d.document_id,
         d.year,
@@ -70,8 +132,16 @@ $documents = $pdo->query("
     JOIN sdopang1_document_types t ON t.doc_type_id = d.doc_type_id
     LEFT JOIN sdopang1schoollist s ON s.schoolID = u.school_id
     LEFT JOIN division_units du ON du.division_unit_id = u.division_unit_id
-    ORDER BY d.uploaded_at DESC, d.document_id DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+";
+
+if ($scopeWhere) {
+    $documentSql .= ' WHERE ' . implode(' AND ', $scopeWhere);
+}
+
+$documentSql .= ' ORDER BY d.uploaded_at DESC, d.document_id DESC';
+$documentStmt = $pdo->prepare($documentSql);
+$documentStmt->execute($scopeParams);
+$documents = $documentStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html>

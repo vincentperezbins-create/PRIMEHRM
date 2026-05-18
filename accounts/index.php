@@ -9,7 +9,7 @@ require_once __DIR__ . '/partials/session.php';
 $roleId = (int) ($currentUser['role_id'] ?? 0);
 $fullName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 $canValidate201 = user_can_validate($pdo, '201');
-$canValidateOpcrf = user_can_validate($pdo, 'opcrf');
+$canValidateOpcrf = user_can_validate_division_opcrf($pdo);
 $canValidateIpcrf = user_can_validate($pdo, 'ipcrf');
 $canValidateLeave = user_can_validate($pdo, 'leave');
 $hasValidatorTasks = $canValidate201 || $canValidateOpcrf || $canValidateIpcrf || $canValidateLeave;

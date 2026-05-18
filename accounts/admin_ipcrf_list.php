@@ -4,10 +4,23 @@ require_once __DIR__ . '/core/auth.php';
 
 $userModel = new User($pdo);
 require_login();
-require_validator($pdo, 'ipcrf');
+require_ipcrf_validator($pdo);
 require_once __DIR__ . '/partials/session.php';
 
-$total = (int) $pdo->query("SELECT COUNT(*) FROM sdopang1_ipcrf")->fetchColumn();
+$ipcrfScope = user_ipcrf_validation_scope($pdo);
+
+if ($ipcrfScope === 'school') {
+    $totalStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM sdopang1_ipcrf i
+        JOIN sdopang1_user u ON u.user_id = i.user_id
+        WHERE u.school_id = ?
+    ");
+    $totalStmt->execute([$currentUser['school_id'] ?? '']);
+    $total = (int) $totalStmt->fetchColumn();
+} else {
+    $total = (int) $pdo->query("SELECT COUNT(*) FROM sdopang1_ipcrf")->fetchColumn();
+}
 ?>
 <!DOCTYPE html>
 <html>

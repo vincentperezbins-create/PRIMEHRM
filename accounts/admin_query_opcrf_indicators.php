@@ -4,7 +4,6 @@ require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/opcrf_helpers.php';
 
 require_login();
-require_role([1]);
 
 $action = $_POST['action'] ?? '';
 
@@ -15,6 +14,10 @@ try {
 
         if (!$opcrfId || $objective === '') {
             opcrf_json(['status' => 'error', 'message' => 'OPCRF and objective are required'], 422);
+        }
+
+        if (!opcrf_user_can_manage_content($pdo, $opcrfId)) {
+            opcrf_json(['status' => 'error', 'message' => 'Only the owner office/unit can add indicators.'], 403);
         }
 
         $stmt = $pdo->prepare("
@@ -48,6 +51,10 @@ try {
         $stmt = $pdo->prepare("SELECT opcrf_id FROM sdopang1_opcrf_indicators WHERE indicator_id = ?");
         $stmt->execute([$indicatorId]);
         $opcrfId = (int) $stmt->fetchColumn();
+
+        if (!$opcrfId || !opcrf_user_can_manage_content($pdo, $opcrfId)) {
+            opcrf_json(['status' => 'error', 'message' => 'Only the owner office/unit can delete indicators.'], 403);
+        }
 
         $stmt = $pdo->prepare("DELETE FROM sdopang1_opcrf_indicators WHERE indicator_id = ?");
         $stmt->execute([$indicatorId]);

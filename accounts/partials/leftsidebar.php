@@ -38,7 +38,7 @@
         <?php
         $roleId = (int) ($_SESSION['role_id'] ?? 0);
         $canValidate201 = isset($pdo) && user_can_validate($pdo, '201');
-        $canValidateOpcrf = isset($pdo) && user_can_validate($pdo, 'opcrf');
+        $canValidateOpcrf = isset($pdo) && user_can_validate_division_opcrf($pdo);
         $canValidateIpcrf = isset($pdo) && user_can_validate($pdo, 'ipcrf');
         $canValidateLeave = isset($pdo) && user_can_validate($pdo, 'leave');
         $hasValidatorTasks = $canValidate201 || $canValidateOpcrf || $canValidateIpcrf || $canValidateLeave;

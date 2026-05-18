@@ -4,13 +4,22 @@ require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/leave_helpers.php';
 
 require_login();
-require_validator($pdo, 'leave');
+require_scoped_validator($pdo, 'leave');
 
 header('Content-Type: application/json');
 
 try {
+    $where = [];
+    $params = [];
+    $scope = user_area_validation_scope($pdo, 'leave');
 
-    $stmt = $pdo->query("
+    if ($scope === 'school') {
+        $user = current_user_row($pdo);
+        $where[] = 'u.school_id = ?';
+        $params[] = (string) ($user['school_id'] ?? '');
+    }
+
+    $sql = "
         SELECT 
             la.application_id,
             la.user_id,
@@ -39,8 +48,15 @@ try {
         FROM leave_applications la
         JOIN sdopang1_user u ON la.user_id = u.user_id
         JOIN leave_types lt ON la.leave_type_id = lt.leave_type_id
-        ORDER BY la.created_at DESC
-    ");
+    ";
+
+    if ($where) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
+    }
+
+    $sql .= ' ORDER BY la.created_at DESC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

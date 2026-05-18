@@ -4,7 +4,7 @@ require_once __DIR__ . '/core/auth.php';
 
 $userModel = new User($pdo);
 require_login();
-require_validator($pdo, 'leave');
+require_scoped_validator($pdo, 'leave');
 require_once __DIR__ . '/partials/session.php';
 require_once __DIR__ . '/core/csrf.php';
 require_once __DIR__ . '/core/leave_helpers.php';
@@ -48,7 +48,9 @@ $leaveTypes = $pdo->query($typeSql)->fetchAll(PDO::FETCH_ASSOC);
         <div class="card shadow-sm">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span>Leave Applications</span>
-    <a class="btn btn-sm btn-outline-primary" href="admin_leave_balances.php">View Balances</a>
+    <?php if ((int) ($_SESSION['role_id'] ?? 0) === 1): ?>
+      <a class="btn btn-sm btn-outline-primary" href="admin_leave_balances.php">View Balances</a>
+    <?php endif; ?>
   </div>
   <div class="card-body">
     <table id="tblApps" class="table table-hover table-bordered w-100">
@@ -218,14 +220,56 @@ const tbl = $('#tblApps').DataTable({
   ]
 });
 
-function act(id, action){
+function showLeaveActionError(message) {
+  const text = message || 'Action failed';
+  const isMigration = text.includes('leave_pay_status_migration.sql');
+
+  if (window.Swal) {
+    Swal.fire({
+      icon: isMigration ? 'warning' : 'error',
+      title: isMigration ? 'Database Update Required' : 'Action failed',
+      text
+    });
+    return;
+  }
+
+  window.alert(text);
+}
+
+async function act(id, action){
   let remarks = '';
   const payStatus = $(`#pay-${id}`).val() || 'with_pay';
+
   if (action === 'reject') {
-    remarks = prompt('Reason for rejection');
-    if (!remarks) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Reject leave application?',
+      input: 'textarea',
+      inputLabel: 'Reason for rejection',
+      inputPlaceholder: 'Enter the reason the employee will see',
+      inputAttributes: { 'aria-label': 'Reason for rejection' },
+      showCancelButton: true,
+      confirmButtonText: 'Reject',
+      confirmButtonColor: '#d33',
+      inputValidator: value => !value.trim() ? 'Rejection remarks are required.' : undefined
+    });
+
+    if (!result.isConfirmed) return;
+    remarks = result.value.trim();
   } else {
-    remarks = prompt('Approval remarks (optional)') || '';
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Approve leave application?',
+      input: 'textarea',
+      inputLabel: 'Approval remarks',
+      inputPlaceholder: 'Optional',
+      showCancelButton: true,
+      confirmButtonText: 'Approve',
+      confirmButtonColor: '#28a745'
+    });
+
+    if (!result.isConfirmed) return;
+    remarks = (result.value || '').trim();
   }
 
   $.post('admin_query_leave_applications.php', {
@@ -237,14 +281,15 @@ function act(id, action){
     })
     .done(response => {
       if (response.status !== 'success') {
-        alert(response.message || 'Action failed');
+        showLeaveActionError(response.message);
         return;
       }
+      Swal.fire({icon: 'success', title: 'Saved', timer: 1200, showConfirmButton: false});
       tbl.ajax.reload(null,false);
     })
     .fail(xhr => {
       const response = xhr.responseJSON || {};
-      alert(response.message || 'Action failed');
+      showLeaveActionError(response.message);
     });
 }
 
@@ -271,15 +316,18 @@ $('#editLeaveForm').on('submit', function(e) {
     .done(response => {
       if (response.status !== 'success') {
         $('#editLeaveMessage').addClass('text-danger').text(response.message || 'Update failed');
+        showLeaveActionError(response.message || 'Update failed');
         return;
       }
       $('#editLeaveMessage').addClass('text-success').text('Leave application updated.');
+      Swal.fire({icon: 'success', title: 'Updated', timer: 1200, showConfirmButton: false});
       tbl.ajax.reload(null, false);
       window.setTimeout(() => $('#editLeaveModal').modal('hide'), 500);
     })
     .fail(xhr => {
       const response = xhr.responseJSON || {};
       $('#editLeaveMessage').addClass('text-danger').text(response.message || 'Update failed');
+      showLeaveActionError(response.message || 'Update failed');
     });
 });
 </script>

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
+require_once __DIR__ . '/core/opcrf_helpers.php';
 
 $userModel = new User($pdo);
 require_login();
@@ -19,10 +20,11 @@ if (!$officeId) {
         SELECT office_id
         FROM sdopang1_offices
         WHERE office_head = ?
+           OR unit_head = ?
         ORDER BY office_id
         LIMIT 1
     ");
-    $headOfficeStmt->execute([$_SESSION['user_id']]);
+    $headOfficeStmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
     $headOfficeId = $headOfficeStmt->fetchColumn();
 
     if ($headOfficeId) {
@@ -44,6 +46,8 @@ if (!$opcrf) {
     die('OPCRF not found or access denied');
 }
 
+$canManageContent = opcrf_user_can_manage_content($pdo, $opcrfId);
+
 $indicatorStmt = $pdo->prepare("SELECT * FROM sdopang1_opcrf_indicators WHERE opcrf_id = ? ORDER BY indicator_id");
 $indicatorStmt->execute([$opcrfId]);
 $indicators = $indicatorStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -56,6 +60,10 @@ $movs = $movStmt->fetchAll(PDO::FETCH_ASSOC);
 <html>
  <?php require_once __DIR__ . '/partials/head.php'; ?>
   <body>
+   <?php if (!empty($_SESSION['success_message'])): ?>
+    <script>alert(<?= json_encode($_SESSION['success_message']) ?>);</script>
+    <?php unset($_SESSION['success_message']); ?>
+   <?php endif; ?>
    <?php require_once __DIR__ . '/partials/preloader.php'; ?>
     <?php require_once __DIR__ . '/partials/navbar.php'; ?>
     <?php require_once __DIR__ . '/partials/rightsidebar.php'; ?>
@@ -87,7 +95,7 @@ $movs = $movStmt->fetchAll(PDO::FETCH_ASSOC);
           <h5 class="mb-3">Indicators</h5>
           <div class="table-responsive">
             <table class="table table-bordered">
-              <thead><tr><th>KRA</th><th>Objective</th><th>Success Indicator</th><th>Actual</th><th>Rating</th></tr></thead>
+              <thead><tr><th>KRA</th><th>Objective</th><th>Success Indicator</th><th>Actual</th><th>Rating</th><?php if ($canManageContent): ?><th></th><?php endif; ?></tr></thead>
               <tbody>
                 <?php foreach ($indicators as $indicator): ?>
                   <tr>
@@ -96,9 +104,12 @@ $movs = $movStmt->fetchAll(PDO::FETCH_ASSOC);
                     <td><?= htmlspecialchars($indicator['success_indicator'] ?: '-') ?></td>
                     <td><?= htmlspecialchars($indicator['actual_accomplishment'] ?: '-') ?></td>
                     <td><?= htmlspecialchars($indicator['rating'] !== null ? number_format((float) $indicator['rating'], 2) : '-') ?></td>
+                    <?php if ($canManageContent): ?>
+                      <td><button class="btn btn-sm btn-danger btnDeleteIndicator" data-id="<?= htmlspecialchars((string) $indicator['indicator_id']) ?>">Delete</button></td>
+                    <?php endif; ?>
                   </tr>
                 <?php endforeach; ?>
-                <?php if (!$indicators): ?><tr><td colspan="5" class="text-center text-muted">No indicators yet.</td></tr><?php endif; ?>
+                <?php if (!$indicators): ?><tr><td colspan="<?= $canManageContent ? '6' : '5' ?>" class="text-center text-muted">No indicators yet.</td></tr><?php endif; ?>
               </tbody>
             </table>
           </div>
@@ -123,6 +134,48 @@ $movs = $movStmt->fetchAll(PDO::FETCH_ASSOC);
           </div>
         </div>
 
+        <?php if ($canManageContent): ?>
+          <div class="row mt-20">
+            <div class="col-lg-6 mb-20">
+              <div class="card-box pd-20 h-100">
+                <h5 class="mb-3">Add Indicator</h5>
+                <form id="indicatorForm">
+                  <input type="hidden" name="action" value="add">
+                  <input type="hidden" name="opcrf_id" value="<?= htmlspecialchars((string) $opcrfId, ENT_QUOTES, 'UTF-8') ?>">
+                  <input name="kra" class="form-control mb-2" placeholder="KRA">
+                  <textarea name="objective" class="form-control mb-2" rows="2" required placeholder="Objective"></textarea>
+                  <textarea name="success_indicator" class="form-control mb-2" rows="2" placeholder="Success indicator"></textarea>
+                  <textarea name="actual_accomplishment" class="form-control mb-2" rows="2" placeholder="Actual accomplishment"></textarea>
+                  <input name="quality" class="form-control mb-2" placeholder="Quality">
+                  <input name="efficiency" class="form-control mb-2" placeholder="Efficiency">
+                  <input name="timeliness" class="form-control mb-2" placeholder="Timeliness">
+                  <input name="rating" type="number" step="0.01" class="form-control mb-2" placeholder="Rating">
+                  <textarea name="remarks" class="form-control mb-2" rows="2" placeholder="Remarks"></textarea>
+                  <button class="btn btn-primary w-100">Add Indicator</button>
+                </form>
+              </div>
+            </div>
+
+            <div class="col-lg-6 mb-20">
+              <div class="card-box pd-20 h-100">
+                <h5 class="mb-3">Upload MOV</h5>
+                <form method="POST" action="admin_query_opcrf_upload.php" enctype="multipart/form-data">
+                  <input type="hidden" name="opcrf_id" value="<?= htmlspecialchars((string) $opcrfId, ENT_QUOTES, 'UTF-8') ?>">
+                  <input type="hidden" name="source" value="user">
+                  <select name="indicator_id" class="form-control mb-2">
+                    <option value="">General OPCRF MOV</option>
+                    <?php foreach ($indicators as $indicator): ?>
+                      <option value="<?= htmlspecialchars((string) $indicator['indicator_id'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(substr($indicator['objective'], 0, 80)) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <input type="file" name="mov_file" class="form-control mb-2" required>
+                  <button class="btn btn-primary w-100">Upload MOV</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        <?php endif; ?>
+
         <?php require_once __DIR__ . '/partials/footer.php'; ?>
       </div>
     </div>
@@ -131,6 +184,49 @@ $movs = $movStmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="vendors/scripts/script.min.js"></script>
     <script src="vendors/scripts/process.js"></script>
     <script src="vendors/scripts/layout-settings.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    function postForm(form, url) {
+      fetch(url, {method: 'POST', body: new FormData(form)})
+        .then(r => r.json())
+        .then(res => {
+          if (res.status !== 'success') {
+            Swal.fire({icon: 'error', title: 'Action failed', text: res.message || 'Unable to save.'});
+            return;
+          }
+          location.reload();
+        });
+    }
+
+    const indicatorForm = document.getElementById('indicatorForm');
+    if (indicatorForm) {
+      indicatorForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        postForm(this, 'admin_query_opcrf_indicators.php');
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.btnDeleteIndicator');
+      if (!btn) return;
+      Swal.fire({
+        icon: 'warning',
+        title: 'Delete indicator?',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        confirmButtonColor: '#d33'
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        const body = new URLSearchParams({action: 'delete', indicator_id: btn.dataset.id});
+        fetch('admin_query_opcrf_indicators.php', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body})
+          .then(r => r.json())
+          .then(res => {
+            if (res.status === 'success') location.reload();
+            else Swal.fire({icon: 'error', title: 'Delete failed', text: res.message || 'Unable to delete indicator.'});
+          });
+      });
+    });
+    </script>
   </body>
 </html>
 

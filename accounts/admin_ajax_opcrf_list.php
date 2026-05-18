@@ -3,7 +3,8 @@ require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/core/auth.php';
 
 require_login();
-require_validator($pdo, 'opcrf');header('Content-Type: application/json');
+require_division_opcrf_validator($pdo);
+header('Content-Type: application/json');
 
 $where = [];
 $params = [];
